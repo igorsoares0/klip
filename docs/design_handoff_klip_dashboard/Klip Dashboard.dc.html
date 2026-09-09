@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;padding:0;background:#F5F4F1}
+*{box-sizing:border-box}
+a{color:#3B2FE8;text-decoration:none}
+a:hover{color:#2A1FC4}
+input,select,textarea,button{font-family:inherit}
+::placeholder{color:#A3A3AC}
+@keyframes klipIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes klipSlide{from{transform:translateX(24px);opacity:0}to{transform:none;opacity:1}}
+@keyframes klipShimmer{0%{background-position:-320px 0}100%{background-position:320px 0}}
+.klip-sk{background:linear-gradient(90deg,#EFEEEA 25%,#F7F6F3 50%,#EFEEEA 75%);background-size:320px 100%;animation:klipShimmer 1.1s linear infinite;border-radius:7px}
+</style>
+</helmet>
+
+<!-- AUTH -->
+<sc-if value="{{ isAuth }}" hint-placeholder-val="{{ false }}">
+<div style="min-height:100vh;background:#F5F4F1;font-family:'Instrument Sans',system-ui,sans-serif;color:#15151A;display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));-webkit-font-smoothing:antialiased">
+  <div style="display:flex;flex-direction:column;justify-content:center;padding:48px 40px;max-width:520px;width:100%;justify-self:center">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:36px">
+      <div style="width:28px;height:28px;border-radius:9px;background:#15151A;display:flex;align-items:center;justify-content:center">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="#C9FF3C" stroke-width="1.6" stroke-linecap="round"><path d="M6.5 9.5l3-3M6 4.5l1-1a2.5 2.5 0 013.5 3.5l-1 1M10 11.5l-1 1A2.5 2.5 0 015.5 9l1-1"></path></svg>
+      </div>
+      <span style="font-size:16px;font-weight:700;letter-spacing:-.02em">Klip</span>
+    </div>
+
+    <h1 style="margin:0;font-size:26px;font-weight:700;letter-spacing:-.03em">{{ authTitle }}</h1>
+    <p style="margin:8px 0 26px;font-size:13.5px;color:#75757F;line-height:1.6">{{ authSub }}</p>
+
+    <button onClick="{{ signIn }}" style="display:flex;align-items:center;justify-content:center;gap:10px;height:42px;border:1px solid rgba(20,20,26,.12);background:#FFF;border-radius:11px;font-size:13.5px;font-weight:600;white-space:nowrap;cursor:pointer" style-hover="border-color:rgba(20,20,26,.28)">
+      <svg width="17" height="17" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.6 9.2c0-.6-.1-1.2-.2-1.8H9v3.5h4.8a4.1 4.1 0 01-1.8 2.7v2.2h2.9c1.7-1.6 2.7-3.9 2.7-6.6z"></path><path fill="#34A853" d="M9 18c2.4 0 4.5-.8 6-2.2l-2.9-2.2c-.8.5-1.8.9-3.1.9-2.4 0-4.4-1.6-5.1-3.8H.9v2.3A9 9 0 009 18z"></path><path fill="#FBBC05" d="M3.9 10.7a5.4 5.4 0 010-3.4V5H.9a9 9 0 000 8l3-2.3z"></path><path fill="#EA4335" d="M9 3.6c1.3 0 2.5.5 3.4 1.3l2.6-2.6A9 9 0 00.9 5l3 2.3C4.6 5.2 6.6 3.6 9 3.6z"></path></svg>
+      Continue with Google
+    </button>
+
+    <div style="display:flex;align-items:center;gap:12px;margin:20px 0;color:#A3A3AC;font-size:11.5px">
+      <span style="flex:1;height:1px;background:rgba(20,20,26,.1)"></span>or<span style="flex:1;height:1px;background:rgba(20,20,26,.1)"></span>
+    </div>
+
+    <div style="display:grid;gap:13px">
+      <sc-if value="{{ isRegister }}" hint-placeholder-val="{{ false }}">
+        <label style="display:grid;gap:6px;font-size:12.5px;font-weight:500;color:#4A4A52">Name
+          <input placeholder="Marina Ruiz" style="height:40px;padding:0 12px;border-radius:10px;border:1px solid rgba(20,20,26,.1);font-size:13.5px;outline:none" style-focus="border-color:#3B2FE8;box-shadow:0 0 0 3px rgba(59,47,232,.1)">
+        </label>
+      </sc-if>
+      <label style="display:grid;gap:6px;font-size:12.5px;font-weight:500;color:#4A4A52">Email
+        <input placeholder="you@company.com" style="height:40px;padding:0 12px;border-radius:10px;border:1px solid rgba(20,20,26,.1);font-size:13.5px;outline:none" style-focus="border-color:#3B2FE8;box-shadow:0 0 0 3px rgba(59,47,232,.1)">
+      </label>
+      <label style="display:grid;gap:6px;font-size:12.5px;font-weight:500;color:#4A4A52">
+        <span style="display:flex;justify-content:space-between;align-items:baseline">Password<a href="#" style="font-size:11.5px;font-weight:500">Forgot?</a></span>
+        <input type="password" value="············" style="height:40px;padding:0 12px;border-radius:10px;border:1px solid rgba(20,20,26,.1);font-size:13.5px;outline:none" style-focus="border-color:#3B2FE8;box-shadow:0 0 0 3px rgba(59,47,232,.1)">
+      </label>
+      <sc-if value="{{ isRegister }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;gap:5px;align-items:center">
+          <sc-for list="{{ pwBars }}" as="b" hint-placeholder-count="4">
+            <i style="flex:1;height:4px;border-radius:99px;display:block;background:{{ b }}"></i>
+          </sc-for>
+          <span style="font-size:11px;color:#167A5B;font-weight:600;margin-left:6px;white-space:nowrap">Strong</span>
+        </div>
+      </sc-if>
+      <button onClick="{{ signIn }}" style="height:42px;border:0;border-radius:11px;background:#15151A;color:#FFF;font-size:13.5px;font-weight:600;white-space:nowrap;cursor:pointer;margin-top:3px" style-hover="background:#2C2C34">{{ authCta }}</button>
+    </div>
+
+    <p style="margin:20px 0 0;font-size:12.5px;color:#75757F">{{ authSwitchText }}
+      <button onClick="{{ toggleAuthMode }}" style="border:0;background:transparent;padding:0;color:#3B2FE8;font-size:12.5px;font-weight:600;cursor:pointer">{{ authSwitchCta }}</button>
+    </p>
+    <p style="margin:26px 0 0;font-size:11.5px;color:#A3A3AC;line-height:1.6">By continuing you agree to the Terms and Privacy Policy. We hash visitor IPs and never sell click data.</p>
+  </div>
+
+  <div style="background:#15151A;color:#FFF;padding:48px 44px;display:flex;flex-direction:column;justify-content:center;gap:28px">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#C9FF3C">SHORT LINK → TRACKING → OPTIMIZATION</div>
+    <div style="font-size:28px;font-weight:700;letter-spacing:-.03em;line-height:1.25;max-width:420px;text-wrap:pretty">Every link you share, measured down to the city and the device.</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:18px;max-width:460px">
+      <sc-for list="{{ authStats }}" as="s" hint-placeholder-count="3">
+        <div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;letter-spacing:-.03em">{{ s.value }}</div>
+          <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:4px">{{ s.label }}</div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="border-top:1px solid rgba(255,255,255,.12);padding-top:22px;max-width:420px">
+      <div style="font-size:13.5px;line-height:1.65;color:rgba(255,255,255,.82)">"We moved 4,000 campaign links over in an afternoon. The per-country breakdown alone paid for the lifetime deal."</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.45);margin-top:10px">Head of Growth · agency, 12 clients</div>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<!-- ONBOARDING -->
+<sc-if value="{{ isOnboarding }}" hint-placeholder-val="{{ false }}">
+<div style="min-height:100vh;background:#F5F4F1;font-family:'Instrument Sans',system-ui,sans-serif;color:#15151A;display:flex;flex-direction:column;align-items:center;padding:40px 24px 60px;-webkit-font-smoothing:antialiased">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:30px">
+    <div style="width:26px;height:26px;border-radius:8px;background:#15151A;display:flex;align-items:center;justify-content:center">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#C9FF3C" stroke-width="1.6" stroke-linecap="round"><path d="M6.5 9.5l3-3M6 4.5l1-1a2.5 2.5 0 013.5 3.5l-1 1M10 11.5l-1 1A2.5 2.5 0 015.5 9l1-1"></path></svg>
+    </div>
+    <span style="font-size:15px;font-weight:700;letter-spacing:-.02em">Klip</span>
+  </div>
+
+  <div style="width:100%;max-width:560px">
+    <div style="display:flex;gap:6px;margin-bottom:24px">
+      <sc-for list="{{ steps }}" as="st" hint-placeholder-count="3">
+        <div style="flex:1">
+          <div style="height:4px;border-radius:99px;background:{{ st.bar }}"></div>
+          <div style="font-size:11.5px;font-weight:{{ st.weight }};color:{{ st.color }};margin-top:8px">{{ st.label }}</div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="background:#FFF;border:1px solid rgba(20,20,26,.08);border-radius:16px;padding:28px;animation:klipIn .2s ease both">
+      <sc-if value="{{ step1 }}" hint-placeholder-val="{{ true }}">
+        <div>
+          <h1 style="margin:0;font-size:20px;font-weight:700;letter-spacing:-.025em">Name your workspace</h1>
+          <p style="margin:8px 0 22px;font-size:13.5px;color:#75757F;line-height:1.6">Everything — links, projects, analytics — lives inside a workspace. You can rename it later.</p>
+          <label style="display:grid;gap:6px;font-size:12.5px;font-weight:500;color:#4A4A52">Workspace name
+            <input value="{{ wsName }}" onInput="{{ setWsName }}" placeholder="Acme Growth" style="height:40px;padding:0 12px;border-radius:10px;border:1px solid rgba(20,20,26,.1);font-size:13.5px;outline:none" style-focus="border-color:#3B2FE8;box-shadow:0 0 0 3px rgba(59,47,232,.1)">
+          </label>
+          <div style="margin-top:14px;font-size:12px;color:#75757F">Your links will look like <span style="font-family:'JetBrains Mono',monospace;color:#15151A">klip.to/{{ wsSlugSample }}</span></div>
+          <div style="margin-top:22px;display:grid;gap:9px">
+            <div style="font-size:12.5px;font-weight:600">What are you shortening links for?</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px">
+              <sc-for list="{{ useCases }}" as="u" hint-placeholder-count="4">
+                <button onClick="{{ u.go }}" style="{{ u.style }}">{{ u.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ step2 }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <h1 style="margin:0;font-size:20px;font-weight:700;letter-spacing:-.025em">Create your first link</h1>
+          <p style="margin:8px 0 22px;font-size:13.5px;color:#75757F;line-height:1.6">Paste any URL. You can add UTMs, a project and a QR code afterwards.</p>
+          <div style="display:grid;gap:13px">
+            <label style="display:grid;gap:6px;font-size:12.5px;font-weight:500;color:#4A4A52">Destination URL
+              <input value="{{ dest }}" onInput="{{ setDest }}" placeholder="https://example.com/product" style="height:40px;padding:0 12px;border-radius:10px;border:1px solid rgba(20,20,26,.1);font-size:13.5px;outline:none" style-focus="border-color:#3B2FE8;box-shadow:0 0 0 3px rgba(59,47,232,.1)">
+            </label>
+            <label style="display:grid;gap:6px;font-size:12.5px;font-weight:500;color:#4A4A52">Short link
+              <span style="display:flex;align-items:center;height:40px;border:1px solid rgba(20,20,26,.1);border-radius:10px;overflow:hidden">
+                <span style="padding:0 2px 0 12px;font-family:'JetBrains Mono',monospace;font-size:13.5px;color:#A3A3AC;white-space:nowrap">klip.to/</span>
+                <input value="{{ slug }}" onInput="{{ setSlug }}" style="flex:1;min-width:0;height:100%;border:0;padding:0 12px 0 0;font-family:'JetBrains Mono',monospace;font-size:13.5px;outline:none">
+              </span>
+            </label>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ step3 }}" hint-placeholder-val="{{ false }}">
+        <div style="text-align:center;padding:6px 0">
+          <div style="width:56px;height:56px;margin:0 auto;border-radius:99px;background:#E6F4EE;display:flex;align-items:center;justify-content:center">
+            <svg width="26" height="26" viewBox="0 0 16 16" fill="none" stroke="#167A5B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.2 3L13 5"></path></svg>
+          </div>
+          <h1 style="margin:18px 0 0;font-size:20px;font-weight:700;letter-spacing:-.025em">You're live</h1>
+          <p style="margin:8px auto 20px;max-width:360px;font-size:13.5px;color:#75757F;line-height:1.6">Share this link anywhere — the first click will show up on your dashboard in seconds.</p>
+          <div style="display:flex;align-items:center;gap:10px;justify-content:center;background:#FAFAF8;border:1px solid rgba(20,20,26,.08);border-radius:11px;padding:12px 14px;max-width:360px;margin:0 auto">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">klip.to/{{ slugShown }}</span>
+            <button style="height:28px;padding:0 11px;border:1px solid rgba(20,20,26,.12);background:#FFF;border-radius:8px;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer" style-hover="border-color:rgba(20,20,26,.28)">Copy</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:26px;padding-top:18px;border-top:1px solid rgba(20,20,26,.07)">
+        <button onClick="{{ skipOnboarding }}" style="border:0;background:transparent;padding:0;color:#A3A3AC;font-size:12.5px;white-space:nowrap;cursor:pointer" style-hover="color:#15151A">Skip for now</button>
+        <button onClick="{{ nextStep }}" style="height:38px;padding:0 18px;border:0;border-radius:10px;background:#15151A;color:#FFF;font-size:13px;font-weight:600;white-space:nowrap;cursor:pointer" style-hover="background:#2C2C34">{{ stepCta }}</button>
+      </div>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isApp }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;min-height:100vh;background:#F5F4F1;font-family:'Instrument Sans',system-ui,sans-serif;color:#15151A;-webkit-font-smoothing:antialiased">
+
+  <aside style="width:{{ sidebarWidth }};flex:none;background:#FFFFFF;border-right:1px solid rgba(20,20,26,.08);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;transition:width .18s ease">
+    <div style="height:60px;display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid rgba(20,20,26,.06)">
+      <div style="width:26px;height:26px;flex:none;border-radius:8px;background:#15151A;display:flex;align-items:center;justify-content:center">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#C9FF3C" stroke-width="1.6" stroke-linecap="round"><path d="M6.5 9.5l3-3M6 4.5l1-1a2.5 2.5 0 013.5 3.5l-1 1M10 11.5l-1 1A2.5 2.5 0 015.5 9l1-1"></path></svg>
+      </div>
+      <sc-if value="{{ expanded }}" hint-placeholder-val="{{ true }}">
+        <span style="font-size:15px;font-weight:700;letter-spacing:-.02em">Klip</span>
+      </sc-if>
+    </div>
+
+    <nav style="flex:1;display:flex;flex-direction:column;gap:2px;padding:12px 10px;overflow:hidden">
+      <sc-for list="{{ nav }}" as="item" hint-placeholder-count="8">
+        <button onClick="{{ item.go }}" title="{{ item.label }}" style="{{ item.style }}" style-hover="background:#F2F1EE">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" style="flex:none"><path d="{{ item.d }}"></path></svg>
+          <sc-if value="{{ expanded }}" hint-placeholder-val="{{ true }}"><span style="white-space:nowrap">{{ item.label }}</span></sc-if>
+        </button>
+      </sc-for>
+    </nav>
+
+    <div style="padding:10px;border-top:1px solid rgba(20,20,26,.06);display:flex;flex-direction:column;gap:8px">
+      <sc-if value="{{ expanded }}" hint-placeholder-val="{{ true }}">
+        <div style="background:#F5F4F1;border-radius:10px;padding:12px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:#75757F;margin-bottom:7px"><span>Tracked clicks</span><span style="font-family:'JetBrains Mono',monospace">84.4k / 100k</span></div>
+          <div style="height:5px;border-radius:99px;background:rgba(20,20,26,.09);overflow:hidden"><div style="height:100%;width:84%;background:#3B2FE8;border-radius:99px"></div></div>
+          <div style="font-size:11px;color:#75757F;margin-top:8px">Lifetime plan · resets Oct 1</div>
+        </div>
+      </sc-if>
+      <button onClick="{{ toggleSidebar }}" style="display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border:0;background:transparent;border-radius:8px;color:#75757F;font-size:13px;cursor:pointer" style-hover="background:#F2F1EE;color:#15151A">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="flex:none"><path d="M2.5 3.5h11v9h-11zM6.5 3.5v9"></path></svg>
+        <sc-if value="{{ expanded }}" hint-placeholder-val="{{ true }}"><span>Collapse</span></sc-if>
+      </button>
+    </div>
+  </aside>
+
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+
+    <header style="height:60px;flex:none;display:flex;align-items:center;gap:14px;padding:0 24px;background:rgba(245,244,241,.86);backdrop-filter:blur(10px);border-bottom:1px solid rgba(20,20,26,.08);position:sticky;top:0;z-index:20">
+      <button onClick="{{ toggleWorkspace }}" style="display:flex;flex:none;align-items:center;gap:9px;padding:5px 10px 5px 6px;border:1px solid rgba(20,20,26,.1);background:#FFF;border-radius:9px;cursor:pointer" style-hover="border-color:rgba(20,20,26,.22)">
+        <span style="width:20px;height:20px;border-radius:6px;background:#C9FF3C;color:#15151A;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center">A</span>
+        <span style="font-size:13px;font-weight:600;white-space:nowrap">Acme Growth</span>
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#75757F" stroke-width="1.6" stroke-linecap="round"><path d="M4 6.5L8 10l4-3.5"></path></svg>
+      </button>
+
+      <div style="flex:1 1 160px;min-width:110px;max-width:400px;position:relative">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="#A3A3AC" stroke-width="1.6" stroke-linecap="round" style="position:absolute;left:11px;top:9px"><circle cx="7" cy="7" r="4.5"></circle><path d="M10.5 10.5L14 14"></path></svg>
+        <input placeholder="Search links, projects…" style="width:100%;height:34px;padding:0 50px 0 32px;border-radius:9px;border:1px solid rgba(20,20,26,.1);background:#FFF;font-size:13px;color:#15151A;outline:none" style-focus="border-color:#3B2FE8;box-shadow:0 0 0 3px rgba(59,47,232,.1)">
+        <span style="position:absolute;right:9px;top:8px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#A3A3AC;border:1px solid rgba(20,20,26,.1);border-radius:5px;padding:2px 5px">⌘K</span>
+      </div>
+
+      <div style="flex:1"></div>
+
+      <button onClick="{{ openDrawer }}" style="display:flex;align-items:center;gap:7px;height:34px;padding:0 14px;border:0;border-radius:9px;background:#15151A;color:#FFF;font-size:13px;font-weight:600;white-space:nowrap;cursor:pointer" style-hover="background:#2C2C34">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 3.5v9M3.5 8h9"></path></svg>
+        Create link
+      </button>
+      <div style="width:30px;height:30px;flex:none;border-radius:99px;background:#3B2FE8;color:#FFF;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center">MR</div>
+    </header>
+
+    <main style="flex:1;padding:26px 24px 60px;min-width:0">
+
+      <!-- DASHBOARD · LOADING -->
+      <sc-if value="{{ dashLoading }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width:1240px;margin:0 auto">
+          <div class="klip-sk" style="width:170px;height:26px;margin-bottom:8px"></div>
+          <div class="klip-sk" style="width:280px;height:14px;margin-bottom:22px"></div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:14px">
+            <sc-for list="{{ four }}" as="i" hint-placeholder-count="4">
+              <div style="background:#FFF;border:1px solid rgba(20,20,26,.08);border-radius:14px;padding:16px 18px">
+                <div class="klip-sk" style="width:82px;height:11px"></div>
+                <div class="klip-sk" style="width:120px;height:26px;margin-top:12px"></div>
+                <div class="klip-sk" style="width:150px;height:10px;margin-top:10px"></div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="background:#FFF;border:1px solid rgba(20,20,26,.08);border-radius:14px;padding:18px 20px">
+            <div class="klip-sk" style="width:130px;height:14px;margin-bottom:20px"></div>
+            <div style="display:flex;align-items:flex-end;gap:3px;height:170px">
+              <sc-for list="{{ skeletonBars }}" as="b" hint-placeholder-count="30">
+                <div class="klip-sk" style="flex:1;height:{{ b }};border-radius:3px 3px 0 0"></div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- DASHBOARD · EMPTY -->
+      <sc-if value="{{ dashEmpty }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width:640px;margin:60px auto 0;text-align:center;animation:klipIn .22s ease both">
+          <div style="width:64px;height:64px;margin:0 auto;border-radius:18px;background:#FFF;border:1px solid rgba(20,20,26,.08);display:flex;align-items:center;justify-content:center">
+            <svg width="26" height="26" viewBox="0 0 16 16" fill="none" stroke="#3B2FE8" stroke-width="1.3" stroke-linecap="round"><path d="M6.5 9.5l3-3M6 4.5l1-1a2.5 2.5 0 013.5 3.5l-1 1M10 11.5l-1 1A2.5 2.5 0 015.5 9l1-1"></path></svg>
+          </div>
+          <h1 style="margin:20px 0 0;font-size:21px;font-weight:700;letter-spacing:-.025em">No clicks yet</h1>
+          <p style="margin:8px auto 0;max-width:400px;font-size:13.5px;color:#75757F;line-height:1.6">Create your first short link and share it — analytics start filling in within seconds of the first redirect.</p>
+          <div style="display:flex;gap:9px;justify-content:center;margin-top:20px">
+            <button onClick="{{ openDrawer }}" style="height:36px;padding:0 16px;border:0;border-radius:9px;background:#15151A;color:#FFF;font-size:13px;font-weight:600;white-space:nowrap;cursor:pointer" style-hover="background:#2C2C34">Create your first link</button>
+            <button style="height:36px;padding:0 14px;border:1px solid rgba(20,20,26,.12);background:#FFF;border-radius:9px;font-size:13px;font-weight:500;white-space:nowrap;cursor:pointer" style-hover="border-color:rgba(20,20,26,.28)">Import from CSV</button>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:34px;text-align:left">
+            <sc-for list="{{ emptyTips }}" as="t" hint-placeholder-count="3">
+              <div style="background:#FFF;border:1px solid rgba(20,20,26,.08);border-radius:12px;padding:14px 16px">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#A3A3AC">{{ t.step }}</div>
+                <div style="font-size:13px;font-weight:600;margin-top:7px">{{ t.title }}</div>
+                <div style="font-size:12px;color:#75757F;margin-top:4px;line-height:1.5">{{ t.desc }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- DASHBOARD -->
+      <sc-if value="{{ isDashboard }}" hint-placeholder-val="{{ true }}">
+        <div style="animation:klipIn .22s ease both;max-width:1240px;margin:0 auto">
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px">
+            <div>
+              <h1 style="margin:0;font-size:24px;font-weight:700;letter-spacing:-.025em">Overview</h1>
+              <p style="margin:5px 0 0;font-size:13.5px;color:#75757F">Everything happening across 248 active links.</p>
+            </div>
+            <div style="display:flex;gap:4px;background:#FFF;border:1px solid rgba(20,20,26,.1);border-radius:10px;padding:3px">
+              <sc-for list="{{ ranges }}" as="r" hint-placeholder-count="5">
+                <button onClick="{{ r.go }}" style="{{ r.style }}">{{ r.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:14px">
+            <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+              <div style="background:#FFF;border:1px solid rgba(20,20,26,.08);border-radius:14px;padding:16px 18px">
+                <div style="font-size:12px;color:#75757F;font-weight:500">{{ s.label }}</div>
+                <div style="display:flex;align-items:baseline;gap:9px;margin-top:9px">
+                  <span style="font-size:26px;font-weight:700;letter-spacing:-.03em;font-family:'JetBrains Mono',monospace">{{ s.value }}</span>
+                  <span style="{{ s.deltaStyle }}">{{ s.delta }}</span>
+                </div>
+                <div style="font-size:11.5px;color:#A3A3AC;margin-top:6px">{{ s.sub }}</div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="background:#FFF;border:1px solid rgba(20,20,26,.08);border-radius:14px;padding:18px 20px 14px;margin-bottom:14px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+              <div>
+                <div style="font-size:14px;font-weight:600">Clicks over time</div>
+                <div style="font-size:12px;color:#75757F;margin-top:3px">{{ rangeLabel }} · hover a bar for detail</div>
+              </div>
+              <div style="display:flex;gap:14px;font-size:11.5px;color:#75757F">
+                <span style="display:flex;align-items:center;gap:6px"><i style="width:8px;height:8px;border-radius:2px;background:#3B2FE8;display:block"></i>Clicks</span>
+                <span style="display:flex;align-items:center;gap:6px"><i style="width:8px;height:8px;border-radius:2px;background:#DAD8FA;display:block"></i>Unique</span>
+              </div>
+            </div>
+            <div style="display:flex;align-items:flex-end;gap:3px;height:170px">
+              <sc-for list="{{ series }}" as="b" hint-placeholder-count="30">
+                <div title="{{ b.tip }}" style="flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;cursor:default">
+                  <div style="height:{{ b.h }};background:#3B2FE8;border-radius:3px 3px 0 0" style-hover="background:#2A1FC4"></div>
+                  <div style="height:{{ b.hu }};background:#DAD8FA;border-radius:0 0 3px 3px"></div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#A3A3AC;margin-top:10px">
+              <span>Aug 10</span><span>Aug 20</span><span>Aug 30</span><span>Sep 8</span>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px">
+            <div style="background:#FFF;border:1px solid rgba(20,20,26,.08);border-radius:14px;padding:18px 20px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+                <div style="font-size:14px;font-weight:600">Top links</div>
+                <button onClick="{{ goLinks }}" style="border:0;background:transparent;color:#3B2FE8;font-size:12.5px;font-weight:600;cursor:pointer;padding:0">View all →</button>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:2px">
+                <sc-for list="{{ topLinks }}" as="l" hint-placeholder-count="6">
+                  <button onClick="{{ openAnalytics }}" style="display:flex;align-items:center;gap:12px;padding:9px 10px;margin:0 -10px;border:0;background:transparent;border-radius:9px;cursor:pointer;text-align:left;width:calc(100% + 20px)" style-hover="background:#F7F6F3">
+                    <span style="flex:1;min-width:0">
+                      <span style="display:block;font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:500;color:#15151A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ l.short }}</span>
+                      <span style="display:block;font-size:11.5px;color:#A3A3AC;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px">{{ l.dest }}</span>
+                    </span>
+                    <span style="width:110px;flex:none;height:6px;border-radius:99px;background:#F0EFEC;overflow:hidden"><span style="display:block;height:100%;width:{{ l.pct }};background:#15151A;border-radius:99px"></span></span>
+                    <span style="width:62px;flex:none;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600">{{ l.clicks }}</span>
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <div style="background:#FFF;border:1px solid rgba(20,20,26,.08);border-radius:14px;padding:18px 20px">
+                <div style="display:flex;gap:4px;margin-bottom:14px;background:#F5F4F1;border-radius:8px;padding:3px">
+                  <sc-for list="{{ breakTabs }}" as="t" hint-placeholder-count="3">
+                    <button onClick="{{ t.go }}" style="{{ t.style }}">{{ t.label }}</button>
+                  </sc-for>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:11px">
+                  <sc-for list="{{ breakdown }}" as="b" hint-placeholder-count="5">
+                    <div>
+                      <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px"><span style="display:flex;gap:8px;align-items:center"><span style="font-size:13px">{{ b.icon }}</span>{{ b.label }}</span><span style="font-family:'JetBrains Mono',monospace;color:#75757F">{{ b.value }}</span></div>
+                      <div style="height:5px;border-radius:99px;background:#F0EFEC;overflow:hidden"><div style="height:100%;width:{{ b.pct }};background:#3B2FE8;border-radius:99px"></div></div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+
+              <div style="background:#15151A;color:#FFF;border-radius:14px;padding:18px 20px">
+                <div style="font-size:12px;color:rgba(255,255,255,.55);font-weight:500">Fastest growing</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:600;margin-top:8px">klip.to/creator-drop</div>
+                <div style="display:flex;align-items:baseline;gap:8px;margin-top:10px">
+                  <span style="font-size:28px;font-weight:700;letter-spacing:-.03em;font-family:'JetBrains Mono',monospace">4,821</span>
+                  <span style="font-size:12.5px;color:#C9FF3C;font-weight:600">+312% vs. last week</span>
+                </div>
+                <div style="font-size:11.5px;color:rgba(255,255,255,.5);margin-top:8px">Mostly Instagram traffic from Brazil.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- LINKS · LOADING -->
+      <sc-if value="{{ linksLoading }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width:1240px;margin:0 auto">
+          <div class="klip-sk" style="width:110px;height:26px;margin-bottom:8px"></div>
+          <div class="klip-sk" style="width:230px;height:14px;margin-bottom:22px"></div>
+          <div style="background:#FFF;border:1px solid rgba(20,20,26,.08);border-radius:14px;padding:6px 18px">
+            <sc-for list="{{ eight }}" as="i" hint-placeholder-count="8">
+              <div style="display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid rgba(20,20,26,.055)">
+                <div class="klip-sk" style="width:26px;height:26px;border-radius:7px;flex:none"></div>
+                <div style="flex:1"><div class="klip-sk" style="width:56%;height:12px"></div><div class="klip-sk" style="width:34%;height:9px;margin-top:7px"></div></div>
+                <div class="klip-sk" style="width:60px;height:12px;flex:none"></div>
+                <div class="klip-sk" style="width:96px;height:18px;border-radius:99px;flex:none"></div>
+                <div class="klip-sk" style="width:66px;height:18px;border-radius:99px;flex:none"></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- LINKS · EMPTY -->
+      <sc-if value="{{ linksEmpty }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width:1240px;margin:0 auto;animation:klipIn .22s ease both">
+          <h1 style="margin:0 0 5px;font-size:24px;font-weight:700;letter-spacing:-.025em">Links</h1>
+          <p style="margin:0 0 18px;font-size:13.5px;color:#75757F">Nothing here yet.</p>
+          <div style="background:#FFF;border:1.5px dashed rgba(20,20,26,.14);border-radius:14px;padding:56px 24px;text-align:center">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:14px;color:#A3A3AC">klip.to/<span style="color:#3B2FE8">your-slug</span></div>
+            <div style="font-size:15px;font-weight:600;margin-top:16px">Your first short link takes about 10 seconds</div>
+            <div style="font-size:13px;color:#75757F;margin-top:6px;max-width:380px;margin-left:auto;margin-right:auto;line-height:1.6">Paste a destination URL, pick a slug, and Klip starts counting clicks, countries and devices right away.</div>
+            <button onClick="{{ openDrawer }}" style="margin-top:20px;height:36px;padding:0 16px;border:0;border-radius:9px;background:#15151A;color:#FFF;font-size:13px;font-weight:600;cursor:pointer" style-hover="background:#2C2C34">Create link</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- LINKS -->
+      <sc-if value="{{ isLinks }}" hint-placeholder-val="{{ true }}">
+        <div style="animation:klipIn .22s ease both;max-width:1240px;margin:0 auto">
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:18px">
+            <div>
+              <h1 style="margin:0;font-size:24px;font-weight:700;letter-spacing:-.025em">Links</h1>
+              <p style="margin:5px 0 0;font-size:13.5px;color:#75757F">248 active · 12 paused · 31 archived</p>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+            <div style="position:relative;flex:1;min-width:220px">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="#A3A3AC" stroke-width="1.6" stroke-linecap="round" style="position:absolute;left:11px;top:10px"><circle cx="7" cy="7" r="4.5"></circle><path d="M10.5 10.5L14 14"></path></svg>
+              <input placeholder="Filter by slug or destination" style="width:100%;height:36px;padding:0 12px 0 32px;border-radius:10px;border:1px solid rgba(20,20,26,.1);background:#FFF;font-size:13px;outline:none" style-focus="border-color:#3B2FE8;box-shadow:0 0 0 3px rgba(59,47,232,.1)">
+            </div>
+            <sc-for list="{{ filters }}" as="f" hint-placeholder-count="3">
+              <button style="display:flex;align-items:center;gap:7px;height:36px;padding:0 12px;border:1px solid rgba(20,20,26,.1);background:#FFF;border-radius:10px;font-size:13px;color:#15151A;cursor:pointer" style-hover="border-color:rgba(20,20,26,.22)">
+                <span style="color:#75757F">{{ f.label }}</span><span style="font-weight:600">{{ f.value }}</span>
+                <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="#A3A3AC" stroke-width="1.8" stroke-linecap="round"><path d="M4 6.5L8 10l4-3.5"></path></svg>
+              </button>
+            </sc-for>
+          </div>
+
+          <div style="background:#FFF;border:1px solid rgba(20,20,26,.08);border-radius:14px;overflow:hidden">
+            <div style="overflow-x:auto">
+            <div style="min-width:920px;display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1.4fr) 90px 140px 96px 90px 40px;gap:14px;padding:11px 18px;background:#FAFAF8;border-bottom:1px solid rgba(20,20,26,.07);font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#8A8A93">
+              <span>Link</span><span>Destination</span><span style="text-align:right">Clicks</span><span>Project</span><span>Created</span><span>Status</span><span></span>
+            </div>
+            <sc-for list="{{ links }}" as="l" hint-placeholder-count="9">
+              <div style="min-width:920px;display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1.4fr) 90px 140px 96px 90px 40px;gap:14px;padding:13px 18px;border-bottom:1px solid rgba(20,20,26,.055);align-items:center" style-hover="background:#FAFAF8">
+                <div style="display:flex;align-items:center;gap:10px;min-width:0">
+                  <span style="width:26px;height:26px;flex:none;border-radius:7px;background:#F2F1EE;display:flex;align-items:center;justify-content:center;font-size:11px">{{ l.fav }}</span>
+                  <span style="min-width:0">
+                    <button onClick="{{ openAnalytics }}" style="display:block;border:0;background:transparent;padding:0;font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600;color:#15151A;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%" style-hover="color:#3B2FE8">{{ l.short }}</button>
+                    <span style="display:block;font-size:11px;color:#A3A3AC;margin-top:1px">{{ l.title }}</span>
+                  </span>
+                </div>
+                <span style="font-size:12.5px;color:#75757F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ l.dest }}</span>
+                <span style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600">{{ l.clicks }}</span>
+                <span style="min-width:0"><span style="display:inline-flex;align-items:center;gap:6px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11.5px;padding:3px 8px;border-radius:99px;background:#F2F1EE;color:#4A4A52"><i style="width:6px;height:6px;border-radius:99px;display:block;background:{{ l.dot }}"></i>{{ l.project }}</span></span>
+                <span style="font-size:12px;color:#8A8A93">{{ l.created }}</span>
+                <span><span style="{{ l.statusStyle }}">{{ l.status }}</span></span>
+                <button style="border:0;background:transparent;cursor:pointer;color:#A3A3AC;padding:4px;border-radius:6px;justify-self:end" style-hover="background:#F0EFEC;color:#15151A">
+                  <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="3.5" r="1.3"></circle><circle cx="8" cy="8" r="1.3"></circle><circle cx="8" cy="12.5" r="1.3"></circle></svg>
+                </button>
+              </div>
+            </sc-for>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 18px;font-size:12.5px;color:#75757F">
+              <span>Showing 9 of 248 links</span>
+              <span style="display:flex;gap:6px">
+                <button style="height:28px;padding:0 11px;border:1px solid rgba(20,20,26,.1);background:#FFF;border-radius:8px;font-size:12.5px;cursor:pointer;color:#A3A3AC">Previous</button>
+                <button style="height:28px;padding:0 11px;border:1px solid rgba(20,20,26,.1);background:#FFF;border-radius:8px;font-size:12.5px;cursor:pointer" style-hover="border-color:rgba(20,20,26,.22)">Next</button>
+              </span>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ANALYTICS DETAIL -->
+      <sc-if value="{{ isAnalytics }}" hint-placeholder-val="{{ true }}">
+        <div style="animation:klipIn .22s ease both;max-width:1240px;margin:0 auto">
+          <button onClick="{{ goLinks }}" style="display:flex;align-items:center;gap:6px;border:0;background:transparent;padding:0;color:#75757F;font-size:12.5px;white-space:nowrap;cursor:pointer;margin-bottom:12px" style-hover="color:#15151A">← Back to links</button>
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px">
+            <div>
+              <div style="display:flex;align-items:center;gap:10px">
+                <h1 style="margin:0;font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600;letter-spacing:-.02em">klip.to/summer-sale</h1>
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 8px;border-radius:99px;background:#E6F4EE;color:#167A5B"><i style="width:5px;height:5px;border-radius:99px;background:#167A5B;display:block"></i>Active</span>
+              </div>
+              <p style="margin:7px 0 0;font-size:13px;color:#75757F">→ example.com/product?utm_source=instagram&utm_medium=social</p>
+            </div>
+            <div style="display:flex;gap:8px">
+              <sc-for list="{{ detailActions }}" as="a" hint-placeholder-count="4">
+                <button style="height:34px;padding:0 13px;border:1px solid rgba(20,20,26,.1);background:#FFF;border-radius:9px;font-size:13px;font-weight:500;white-space:nowrap;cursor:pointer" style-hover="border-color:rgba(20,20,26,.25)">{{ a }}</button>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:14px">
+            <sc-for list="{{ detailStats }}" as="s" hint-placeholder-count="4">
+              <div style="background:#FFF;border:1px solid rgba(20,20,26,.08);border-radius:14px;padding:16px 18px">
+                <div style="font-size:12px;color:#75757F">{{ s.label }}</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;letter-spacing:-.03em;margin-top:8px">{{ s.value }}</div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="background:#FFF;border:1px solid rgba(20,20,26,.08);border-radius:14px;padding:18px 20px 14px;margin-bottom:14px">
+            <div style="font-size:14px;font-weight:600;margin-bottom:16px">Clicks · last 30 days</div>
+            <div style="display:flex;align-items:flex-end;gap:3px;height:150px">
+              <sc-for list="{{ series }}" as="b" hint-placeholder-count="30">
+                <div title="{{ b.tip }}" style="flex:1;height:{{ b.h }};background:#15151A;border-radius:3px" style-hover="background:#3B2FE8"></div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px">
+            <sc-for list="{{ detailPanels }}" as="p" hint-placeholder-count="4">
+              <div style="background:#FFF;border:1px solid rgba(20,20,26,.08);border-radius:14px;padding:18px 20px">
+                <div style="font-size:13.5px;font-weight:600;margin-bottom:14px">{{ p.title }}</div>
+                <div style="display:flex;flex-direction:column;gap:10px">
+                  <sc-for list="{{ p.rows }}" as="r" hint-placeholder-count="5">
+                    <div>
+                      <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px"><span>{{ r.label }}</span><span style="font-family:'JetBrains Mono',monospace;color:#75757F">{{ r.value }}</span></div>
+                      <div style="height:5px;border-radius:99px;background:#F0EFEC;overflow:hidden"><div style="height:100%;width:{{ r.pct }};background:{{ p.color }};border-radius:99px"></div></div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- PROJECTS -->
+      <sc-if value="{{ isProjects }}" hint-placeholder-val="{{ true }}">
+        <div style="animation:klipIn .22s ease both;max-width:1240px;margin:0 auto">
+          <h1 style="margin:0 0 5px;font-size:24px;font-weight:700;letter-spacing:-.025em">Projects</h1>
+          <p style="margin:0 0 20px;font-size:13.5px;color:#75757F">Group links by campaign, client, or channel.</p>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;align-items:start">
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;align-content:start">
+              <sc-for list="{{ projects }}" as="p" hint-placeholder-count="5">
+                <div style="background:#FFF;border:1px solid rgba(20,20,26,.08);border-radius:14px;padding:16px 18px;cursor:pointer" style-hover="border-color:rgba(20,20,26,.22)">
+                  <div style="display:flex;align-items:center;justify-content:space-between">
+                    <span style="width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:{{ p.tint }}">
+                      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="{{ p.dot }}" stroke-width="1.5" stroke-linejoin="round"><path d="M2 4.5a1 1 0 011-1h3l1.2 1.5H13a1 1 0 011 1v6a1 1 0 01-1 1H3a1 1 0 01-1-1z"></path></svg>
+                    </span>
+                    <span style="font-size:11.5px;color:#A3A3AC">{{ p.updated }}</span>
+                  </div>
+                  <div style="font-size:14.5px;font-weight:600;margin-top:12px">{{ p.name }}</div>
+                  <div style="font-size:12px;color:#75757F;margin-top:4px">{{ p.desc }}</div>
+                  <div style="display:flex;gap:16px;margin-top:14px;padding-top:12px;border-top:1px solid rgba(20,20,26,.06);font-size:12px;color:#75757F">
+                    <span><b style="color:#15151A;font-family:'JetBrains Mono',monospace">{{ p.links }}</b> links</span>
+                    <span><b style="color:#15151A;font-family:'JetBrains Mono',monospace">{{ p.clicks }}</b> clicks</span>
+                  </div>
+                </div>
+              </sc-for>
+              <button style="border:1.5px dashed rgba(20,20,26,.16);background:transparent;border-radius:14px;min-height:150px;color:#75757F;font-size:13px;font-weight:500;cursor:pointer" style-hover="border-color:#3B2FE8;color:#3B2FE8">+ New project</button>
+            </div>
+
+            <div style="background:#FFF;border:1px solid rgba(20,20,26,.08);border-radius:14px;padding:18px 20px;align-self:start">
+              <div style="font-size:13.5px;font-weight:600;margin-bottom:4px">Summer Campaign</div>
+              <div style="font-size:12px;color:#75757F;margin-bottom:14px">Folder structure</div>
+              <div style="display:flex;flex-direction:column;gap:1px">
+                <sc-for list="{{ tree }}" as="t" hint-placeholder-count="9">
+                  <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;padding-left:{{ t.indent }};border-radius:7px;font-size:12.5px;color:{{ t.color }};cursor:pointer" style-hover="background:#F7F6F3">
+                    <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#C3C3CA">{{ t.mark }}</span>
+                    <span style="flex:1">{{ t.name }}</span>
+                    <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#A3A3AC">{{ t.count }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- QR CODES -->
+      <sc-if value="{{ isQr }}" hint-placeholder-val="{{ true }}">
+        <div style="animation:klipIn .22s ease both;max-width:1240px;margin:0 auto">
+          <h1 style="margin:0 0 5px;font-size:24px;font-weight:700;letter-spacing:-.025em">QR Codes</h1>
+          <p style="margin:0 0 20px;font-size:13.5px;color:#75757F">Every code points to the short link — change the destination anytime without reprinting.</p>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px">
+            <sc-for list="{{ qrs }}" as="q" hint-placeholder-count="4">
+              <div style="background:#FFF;border:1px solid rgba(20,20,26,.08);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:14px">
+                <div style="background:#FAFAF8;border-radius:11px;padding:18px;display:flex;justify-content:center">
+                  <div style="display:grid;grid-template-columns:repeat(13,7px);grid-auto-rows:7px;gap:1px">
+                    <sc-for list="{{ q.cells }}" as="c" hint-placeholder-count="169">
+                      <i style="display:block;border-radius:1px;background:{{ c }}"></i>
+                    </sc-for>
+                  </div>
+                </div>
+                <div>
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600">{{ q.short }}</div>
+                  <div style="font-size:11.5px;color:#A3A3AC;margin-top:3px">{{ q.scans }} scans · {{ q.created }}</div>
+                </div>
+                <div style="display:flex;gap:6px">
+                  <button style="flex:1;height:30px;border:1px solid rgba(20,20,26,.1);background:#FFF;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer" style-hover="border-color:rgba(20,20,26,.25)">PNG</button>
+                  <button style="flex:1;height:30px;border:1px solid rgba(20,20,26,.1);background:#FFF;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer" style-hover="border-color:rgba(20,20,26,.25)">SVG</button>
+                  <button style="flex:1;height:30px;border:1px solid rgba(20,20,26,.1);background:#FFF;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer" style-hover="border-color:rgba(20,20,26,.25)">Style</button>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- DOMAINS -->
+      <sc-if value="{{ isDomains }}" hint-placeholder-val="{{ true }}">
+        <div style="animation:klipIn .22s ease both;max-width:900px;margin:0 auto">
+          <h1 style="margin:0 0 5px;font-size:24px;font-weight:700;letter-spacing:-.025em">Domains</h1>
+          <p style="margin:0 0 20px;font-size:13.5px;color:#75757F">Serve links from your own branded hostname.</p>
+          <div style="background:#FFF;border:1px solid rgba(20,20,26,.08);border-radius:14px;overflow:hidden;margin-bottom:14px">
+            <sc-for list="{{ domains }}" as="d" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid rgba(20,20,26,.055)">
+                <span style="flex:1;min-width:0">
+                  <span style="display:block;font-family:'JetBrains Mono',monospace;font-size:13.5px;font-weight:600">{{ d.host }}</span>
+                  <span style="display:block;font-size:11.5px;color:#A3A3AC;margin-top:3px">{{ d.note }}</span>
+                </span>
+                <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#75757F">{{ d.links }} links</span>
+                <span style="{{ d.statusStyle }}">{{ d.status }}</span>
+                <button style="border:0;background:transparent;color:#A3A3AC;cursor:pointer;padding:4px" style-hover="color:#15151A">
+                  <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="3.5" r="1.3"></circle><circle cx="8" cy="8" r="1.3"></circle><circle cx="8" cy="12.5" r="1.3"></circle></svg>
+                </button>
+              </div>
+            </sc-for>
+          </div>
+          <div style="background:#FFF;border:1px solid rgba(20,20,26,.08);border-radius:14px;padding:20px">
+            <div style="font-size:14px;font-weight:600;margin-bottom:4px">Verify <span style="font-family:'JetBrains Mono',monospace">go.northwind.io</span></div>
+            <div style="font-size:12.5px;color:#75757F;margin-bottom:14px">Add this record at your DNS provider. Verification usually completes in under 10 minutes.</div>
+            <div style="background:#15151A;border-radius:11px;padding:14px 16px;display:grid;grid-template-columns:70px 1fr;gap:8px 18px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#E9E9EC">
+              <span style="color:rgba(255,255,255,.45)">TYPE</span><span>CNAME</span>
+              <span style="color:rgba(255,255,255,.45)">NAME</span><span>go</span>
+              <span style="color:rgba(255,255,255,.45)">VALUE</span><span style="color:#C9FF3C">edge.klip.to</span>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:14px">
+              <button style="height:34px;padding:0 14px;border:0;border-radius:9px;background:#15151A;color:#FFF;font-size:13px;font-weight:600;cursor:pointer" style-hover="background:#2C2C34">Check DNS</button>
+              <button style="height:34px;padding:0 14px;border:1px solid rgba(20,20,26,.1);background:#FFF;border-radius:9px;font-size:13px;cursor:pointer" style-hover="border-color:rgba(20,20,26,.25)">Copy record</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- API KEYS -->
+      <sc-if value="{{ isApi }}" hint-placeholder-val="{{ false }}">
+        <div style="animation:klipIn .22s ease both;max-width:900px;margin:0 auto">
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px">
+            <div>
+              <h1 style="margin:0;font-size:24px;font-weight:700;letter-spacing:-.025em">API</h1>
+              <p style="margin:5px 0 0;font-size:13.5px;color:#75757F">Create links programmatically. Keys are scoped to this workspace.</p>
+            </div>
+            <button onClick="{{ createKey }}" style="height:34px;padding:0 14px;border:0;border-radius:9px;background:#15151A;color:#FFF;font-size:13px;font-weight:600;white-space:nowrap;cursor:pointer" style-hover="background:#2C2C34">Create API key</button>
+          </div>
+
+          <sc-if value="{{ newKey }}" hint-placeholder-val="{{ false }}">
+            <div style="background:#FFF;border:1px solid rgba(59,47,232,.3);box-shadow:0 0 0 3px rgba(59,47,232,.07);border-radius:14px;padding:18px 20px;margin-bottom:14px;animation:klipIn .2s ease both">
+              <div style="font-size:13.5px;font-weight:600">Copy your key now</div>
+              <div style="font-size:12.5px;color:#75757F;margin-top:4px">This is the only time it will be shown. Store it in your server environment.</div>
+              <div style="display:flex;align-items:center;gap:10px;margin-top:13px;background:#15151A;border-radius:10px;padding:12px 14px">
+                <span style="flex:1;min-width:0;font-family:'JetBrains Mono',monospace;font-size:12.5px;color:#C9FF3C;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ newKey }}</span>
+                <button style="height:28px;padding:0 11px;border:1px solid rgba(255,255,255,.22);background:transparent;color:#FFF;border-radius:8px;font-size:12px;white-space:nowrap;cursor:pointer" style-hover="background:rgba(255,255,255,.12)">Copy</button>
+              </div>
+            </div>
+          </sc-if>
+
+          <div style="background:#FFF;border:1px solid rgba(20,20,26,.08);border-radius:14px;overflow:hidden;margin-bottom:14px">
+            <sc-for list="{{ apiKeys }}" as="k" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:14px;padding:15px 20px;border-bottom:1px solid rgba(20,20,26,.055)">
+                <span style="flex:1;min-width:0">
+                  <span style="display:block;font-size:13.5px;font-weight:600">{{ k.name }}</span>
+                  <span style="display:block;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#A3A3AC;margin-top:3px">{{ k.masked }}</span>
+                </span>
+                <span style="font-size:12px;color:#75757F;white-space:nowrap">{{ k.used }}</span>
+                <span style="{{ k.scopeStyle }}">{{ k.scope }}</span>
+                <button style="border:0;background:transparent;color:#C2452D;font-size:12.5px;font-weight:600;white-space:nowrap;cursor:pointer;padding:4px 6px;border-radius:7px" style-hover="background:#FBEDE9">Revoke</button>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="background:#FFF;border:1px solid rgba(20,20,26,.08);border-radius:14px;padding:20px">
+            <div style="font-size:13.5px;font-weight:600;margin-bottom:4px">Quick start</div>
+            <div style="font-size:12.5px;color:#75757F;margin-bottom:14px">Create a link with one request. Rate limit: 60 req/min per key.</div>
+            <div style="background:#15151A;border-radius:11px;padding:16px 18px;overflow-x:auto">
+              <pre style="margin:0;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.75;color:#E9E9EC">{{ curl }}</pre>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+              <sc-for list="{{ endpoints }}" as="e" hint-placeholder-count="6">
+                <span style="display:inline-flex;align-items:center;gap:7px;font-family:'JetBrains Mono',monospace;font-size:11.5px;padding:4px 9px;border-radius:7px;background:#F5F4F1;color:#4A4A52;white-space:nowrap"><b style="color:{{ e.color }}">{{ e.method }}</b>{{ e.path }}</span>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- BILLING -->
+      <sc-if value="{{ isBilling }}" hint-placeholder-val="{{ true }}">
+        <div style="animation:klipIn .22s ease both;max-width:900px;margin:0 auto">
+          <h1 style="margin:0 0 5px;font-size:24px;font-weight:700;letter-spacing:-.025em">Billing</h1>
+          <p style="margin:0 0 20px;font-size:13.5px;color:#75757F">Lifetime deal · nothing else to pay.</p>
+          <div style="background:#15151A;color:#FFF;border-radius:16px;padding:24px 26px;margin-bottom:14px;display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap">
+            <div>
+              <div style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#C9FF3C;border:1px solid rgba(201,255,60,.35);border-radius:99px;padding:3px 9px">Lifetime · Active</div>
+              <div style="font-size:26px;font-weight:700;letter-spacing:-.03em;margin-top:14px">Klip Pro LTD</div>
+              <div style="font-size:13px;color:rgba(255,255,255,.55);margin-top:6px">Purchased Mar 12, 2026 via Paddle · $89 one-time</div>
+            </div>
+            <div style="min-width:220px">
+              <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.6);margin-bottom:8px"><span>Tracked clicks this month</span><span style="font-family:'JetBrains Mono',monospace;color:#FFF">84,392 / 100,000</span></div>
+              <div style="height:6px;border-radius:99px;background:rgba(255,255,255,.16);overflow:hidden"><div style="height:100%;width:84%;background:#C9FF3C;border-radius:99px"></div></div>
+              <div style="font-size:11.5px;color:rgba(255,255,255,.45);margin-top:9px">Resets Oct 1 · need more? Add a click pack.</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px">
+            <div style="background:#FFF;border:1px solid rgba(20,20,26,.08);border-radius:14px;padding:20px">
+              <div style="font-size:13.5px;font-weight:600;margin-bottom:14px">What's included</div>
+              <div style="display:flex;flex-direction:column;gap:9px">
+                <sc-for list="{{ entitlements }}" as="e" hint-placeholder-count="6">
+                  <div style="display:flex;align-items:center;gap:9px;font-size:13px">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#167A5B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M3 8.5l3.2 3L13 5"></path></svg>{{ e }}
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="background:#FFF;border:1px solid rgba(20,20,26,.08);border-radius:14px;padding:20px">
+              <div style="font-size:13.5px;font-weight:600;margin-bottom:14px">Receipts</div>
+              <div style="display:flex;flex-direction:column">
+                <sc-for list="{{ invoices }}" as="i" hint-placeholder-count="3">
+                  <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(20,20,26,.055);font-size:13px">
+                    <span style="color:#75757F">{{ i.date }}</span>
+                    <span style="font-family:'JetBrains Mono',monospace">{{ i.amount }}</span>
+                    <a href="#">PDF</a>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- SETTINGS -->
+      <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ true }}">
+        <div style="animation:klipIn .22s ease both;max-width:760px;margin:0 auto">
+          <h1 style="margin:0 0 5px;font-size:24px;font-weight:700;letter-spacing:-.025em">Settings</h1>
+          <p style="margin:0 0 20px;font-size:13.5px;color:#75757F">Workspace and account preferences.</p>
+          <div style="background:#FFF;border:1px solid rgba(20,20,26,.08);border-radius:14px;padding:22px;margin-bottom:14px">
+            <div style="font-size:14px;font-weight:600;margin-bottom:16px">Workspace</div>
+            <div style="display:grid;gap:14px">
+              <label style="display:grid;gap:6px;font-size:12.5px;color:#4A4A52">Name
+                <input value="Acme Growth" style="height:36px;padding:0 12px;border-radius:10px;border:1px solid rgba(20,20,26,.1);font-size:13.5px;outline:none" style-focus="border-color:#3B2FE8;box-shadow:0 0 0 3px rgba(59,47,232,.1)">
+              </label>
+              <label style="display:grid;gap:6px;font-size:12.5px;color:#4A4A52">Slug
+                <input value="acme-growth" style="height:36px;padding:0 12px;border-radius:10px;border:1px solid rgba(20,20,26,.1);font-size:13.5px;font-family:'JetBrains Mono',monospace;outline:none" style-focus="border-color:#3B2FE8;box-shadow:0 0 0 3px rgba(59,47,232,.1)">
+              </label>
+              <label style="display:grid;gap:6px;font-size:12.5px;color:#4A4A52">Default short domain
+                <select style="height:36px;padding:0 10px;border-radius:10px;border:1px solid rgba(20,20,26,.1);font-size:13.5px;background:#FFF;outline:none"><option>klip.to</option><option>go.acme.com</option></select>
+              </label>
+            </div>
+          </div>
+          <div style="background:#FFF;border:1px solid rgba(20,20,26,.08);border-radius:14px;padding:22px;margin-bottom:14px">
+            <div style="font-size:14px;font-weight:600;margin-bottom:14px">Privacy &amp; tracking</div>
+            <sc-for list="{{ toggles }}" as="t" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;padding:11px 0;border-top:1px solid rgba(20,20,26,.055)">
+                <span><span style="display:block;font-size:13.5px;font-weight:500">{{ t.label }}</span><span style="display:block;font-size:12px;color:#75757F;margin-top:2px">{{ t.desc }}</span></span>
+                <span style="{{ t.trackStyle }}"><i style="{{ t.knobStyle }}"></i></span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="background:#FFF;border:1px solid rgba(194,69,45,.28);border-radius:14px;padding:22px">
+            <div style="font-size:14px;font-weight:600;color:#C2452D;margin-bottom:6px">Danger zone</div>
+            <div style="font-size:12.5px;color:#75757F;margin-bottom:14px">Deleting the workspace removes all links immediately — existing short URLs will start returning 410.</div>
+            <button style="height:34px;padding:0 14px;border:1px solid rgba(194,69,45,.35);background:#FFF;color:#C2452D;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer" style-hover="background:#FDF1EE">Delete workspace</button>
+          </div>
+        </div>
+      </sc-if>
+
+    </main>
+  </div>
+
+  <!-- CREATE LINK DRAWER -->
+  <sc-if value="{{ drawerOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:60;display:flex;justify-content:flex-end">
+      <div onClick="{{ closeDrawer }}" style="position:absolute;inset:0;background:rgba(20,20,26,.32);backdrop-filter:blur(2px)"></div>
+      <div style="position:relative;width:520px;max-width:100%;height:100%;background:#FFF;box-shadow:-18px 0 50px rgba(20,20,26,.14);display:flex;flex-direction:column;animation:klipSlide .2s ease both">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid rgba(20,20,26,.08)">
+          <div>
+            <div style="font-size:16px;font-weight:700;letter-spacing:-.02em">Create link</div>
+            <div style="font-size:12px;color:#75757F;margin-top:2px">Short link → tracking → optimization</div>
+          </div>
+          <button onClick="{{ closeDrawer }}" style="border:0;background:transparent;cursor:pointer;color:#75757F;padding:5px;border-radius:7px" style-hover="background:#F2F1EE;color:#15151A">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"></path></svg>
+          </button>
+        </div>
+
+        <div style="flex:1;overflow:auto;padding:22px;display:flex;flex-direction:column;gap:18px">
+          <label style="display:grid;gap:6px;font-size:12.5px;font-weight:500;color:#4A4A52">Destination URL
+            <input value="{{ dest }}" onInput="{{ setDest }}" placeholder="https://example.com/product" style="{{ destInputStyle }}" style-focus="border-color:#3B2FE8;box-shadow:0 0 0 3px rgba(59,47,232,.1)">
+            <sc-if value="{{ destError }}" hint-placeholder-val="{{ false }}">
+              <span style="display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:500;color:#C2452D">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" style="flex:none"><circle cx="8" cy="8" r="6"></circle><path d="M8 5v3.5M8 10.8v.2"></path></svg>{{ destError }}
+              </span>
+            </sc-if>
+          </label>
+
+          <div style="display:grid;grid-template-columns:150px minmax(0,1fr);gap:10px">
+            <label style="display:grid;gap:6px;font-size:12.5px;font-weight:500;color:#4A4A52">Domain
+              <select style="height:38px;padding:0 10px;border-radius:10px;border:1px solid rgba(20,20,26,.1);font-size:13.5px;background:#FFF;outline:none"><option>klip.to</option><option>go.acme.com</option></select>
+            </label>
+            <label style="display:grid;gap:6px;font-size:12.5px;font-weight:500;color:#4A4A52">Slug
+              <span style="position:relative;display:block">
+                <input value="{{ slug }}" onInput="{{ setSlug }}" placeholder="summer-sale" style="{{ slugInputStyle }}" style-focus="border-color:#3B2FE8;box-shadow:0 0 0 3px rgba(59,47,232,.1)">
+                <button onClick="{{ randomSlug }}" style="position:absolute;right:5px;top:5px;height:28px;padding:0 9px;border:1px solid rgba(20,20,26,.1);background:#FAFAF8;border-radius:7px;font-size:11.5px;font-weight:500;cursor:pointer;color:#4A4A52" style-hover="border-color:rgba(20,20,26,.25)">Random</button>
+              </span>
+              <sc-if value="{{ slugError }}" hint-placeholder-val="{{ false }}">
+                <span style="display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:500;color:#C2452D">
+                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" style="flex:none"><circle cx="8" cy="8" r="6"></circle><path d="M8 5v3.5M8 10.8v.2"></path></svg>{{ slugError }}
+                </span>
+              </sc-if>
+              <sc-if value="{{ slugOk }}" hint-placeholder-val="{{ false }}">
+                <span style="display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:500;color:#167A5B">
+                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M3 8.5l3.2 3L13 5"></path></svg>Available
+                </span>
+              </sc-if>
+            </label>
+          </div>
+
+          <div style="background:#FAFAF8;border:1px solid rgba(20,20,26,.07);border-radius:11px;padding:13px 15px">
+            <div style="font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#8A8A93;margin-bottom:7px">Preview</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600">klip.to/{{ slugShown }}</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#75757F;margin-top:6px;word-break:break-all;line-height:1.55">→ {{ finalUrl }}</div>
+          </div>
+
+          <label style="display:grid;gap:6px;font-size:12.5px;font-weight:500;color:#4A4A52">Title
+            <input placeholder="Summer sale — product page" style="height:38px;padding:0 12px;border-radius:10px;border:1px solid rgba(20,20,26,.1);font-size:13.5px;outline:none" style-focus="border-color:#3B2FE8;box-shadow:0 0 0 3px rgba(59,47,232,.1)">
+          </label>
+
+          <div>
+            <button onClick="{{ toggleUtm }}" style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:11px 14px;border:1px solid rgba(20,20,26,.1);background:#FFF;border-radius:11px;cursor:pointer;font-size:13px;font-weight:600;color:#15151A" style-hover="border-color:rgba(20,20,26,.25)">
+              <span>UTM parameters</span>
+              <span style="font-size:12px;font-weight:500;color:#75757F">{{ utmToggleLabel }}</span>
+            </button>
+            <sc-if value="{{ utmOpen }}" hint-placeholder-val="{{ true }}">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 2px 0">
+                <sc-for list="{{ utmFields }}" as="f" hint-placeholder-count="5">
+                  <label style="display:grid;gap:5px;font-size:12px;color:#4A4A52;grid-column:{{ f.span }}">{{ f.label }}
+                    <input value="{{ f.value }}" onInput="{{ f.onInput }}" placeholder="{{ f.ph }}" style="height:34px;padding:0 11px;border-radius:9px;border:1px solid rgba(20,20,26,.1);font-size:12.5px;font-family:'JetBrains Mono',monospace;outline:none" style-focus="border-color:#3B2FE8;box-shadow:0 0 0 3px rgba(59,47,232,.1)">
+                  </label>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <label style="display:grid;gap:6px;font-size:12.5px;font-weight:500;color:#4A4A52">Project
+              <select style="height:38px;padding:0 10px;border-radius:10px;border:1px solid rgba(20,20,26,.1);font-size:13.5px;background:#FFF;outline:none"><option>Summer Campaign</option><option>Creator Program</option><option>Paid Social</option></select>
+            </label>
+            <label style="display:grid;gap:6px;font-size:12.5px;font-weight:500;color:#4A4A52">Folder
+              <select style="height:38px;padding:0 10px;border-radius:10px;border:1px solid rgba(20,20,26,.1);font-size:13.5px;background:#FFF;outline:none"><option>Instagram</option><option>Facebook</option><option>Influencers</option></select>
+            </label>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:16px 22px;border-top:1px solid rgba(20,20,26,.08);background:#FAFAF8">
+          <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;white-space:nowrap;color:#4A4A52"><input type="checkbox" checked style="accent-color:#3B2FE8;width:15px;height:15px">Generate QR code</label>
+          <span style="display:flex;gap:8px">
+            <button onClick="{{ closeDrawer }}" style="height:36px;padding:0 14px;border:1px solid rgba(20,20,26,.12);background:#FFF;border-radius:9px;font-size:13px;font-weight:500;white-space:nowrap;cursor:pointer" style-hover="border-color:rgba(20,20,26,.28)">Cancel</button>
+            <button onClick="{{ createLink }}" disabled="{{ formInvalid }}" style="{{ submitStyle }}">Create link</button>
+          </span>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:80;display:flex;align-items:center;gap:14px;background:#15151A;color:#FFF;padding:12px 14px 12px 16px;border-radius:12px;box-shadow:0 14px 34px rgba(20,20,26,.28);animation:klipIn .2s ease both">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#C9FF3C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.2 3L13 5"></path></svg>
+      <span style="font-size:13px">Link created · <b style="font-family:'JetBrains Mono',monospace">klip.to/{{ slugShown }}</b></span>
+      <span style="display:flex;gap:6px">
+        <button style="height:28px;padding:0 10px;border:1px solid rgba(255,255,255,.22);background:transparent;color:#FFF;border-radius:8px;font-size:12px;white-space:nowrap;cursor:pointer" style-hover="background:rgba(255,255,255,.12)">Copy</button>
+        <button onClick="{{ openAnalytics }}" style="height:28px;padding:0 10px;border:0;background:#FFF;color:#15151A;border-radius:8px;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer">Analytics</button>
+      </span>
+    </div>
+  </sc-if>
+
+</div>
+</sc-if>
+
+<div style="position:fixed;right:14px;bottom:14px;z-index:90;display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+  <sc-if value="{{ dockOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="background:rgba(255,255,255,.97);backdrop-filter:blur(10px);border:1px solid rgba(20,20,26,.12);border-radius:13px;padding:12px 13px;box-shadow:0 12px 34px rgba(20,20,26,.16);display:grid;gap:11px;animation:klipIn .16s ease both">
+      <div style="display:grid;gap:6px">
+        <span style="font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#A3A3AC">Flow</span>
+        <span style="display:flex;gap:2px;background:#EDECE8;border-radius:9px;padding:2px">
+          <sc-for list="{{ views }}" as="v" hint-placeholder-count="3">
+            <button onClick="{{ v.go }}" style="{{ v.style }}">{{ v.label }}</button>
+          </sc-for>
+        </span>
+      </div>
+      <div style="display:grid;gap:6px">
+        <span style="font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#A3A3AC">Data state</span>
+        <span style="display:flex;gap:2px;background:#EDECE8;border-radius:9px;padding:2px">
+          <sc-for list="{{ dataStates }}" as="d" hint-placeholder-count="3">
+            <button onClick="{{ d.go }}" style="{{ d.style }}">{{ d.label }}</button>
+          </sc-for>
+        </span>
+      </div>
+    </div>
+  </sc-if>
+  <button onClick="{{ toggleDock }}" title="Prototype controls" style="display:flex;align-items:center;gap:7px;height:30px;padding:0 11px;border:1px solid rgba(20,20,26,.12);background:rgba(255,255,255,.94);backdrop-filter:blur(8px);border-radius:99px;box-shadow:0 6px 18px rgba(20,20,26,.12);font-size:11.5px;font-weight:600;color:#4A4A52;white-space:nowrap;cursor:pointer" style-hover="border-color:rgba(20,20,26,.3)">
+    <i style="width:6px;height:6px;border-radius:99px;background:#3B2FE8;display:block"></i>Prototype
+  </button>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:940}}">
+const NAV = [
+  ["dashboard","Dashboard","M2 3.5h5v4H2zM9 3.5h5v9H9zM2 9.5h5v3H2z"],
+  ["links","Links","M6.5 9.5l3-3M6 4.5l1-1a2.5 2.5 0 013.5 3.5l-1 1M10 11.5l-1 1A2.5 2.5 0 015.5 9l1-1"],
+  ["projects","Projects","M2 4.5a1 1 0 011-1h3l1.2 1.5H13a1 1 0 011 1v6a1 1 0 01-1 1H3a1 1 0 01-1-1z"],
+  ["analytics","Analytics","M2.5 13V8M6.5 13V3.5M10.5 13V9.5M14 13V6"],
+  ["qr","QR Codes","M2.5 2.5h4v4h-4zM9.5 2.5h4v4h-4zM2.5 9.5h4v4h-4zM9.5 9.5h1.6v1.6H9.5zM11.9 11.9h1.6v1.6h-1.6z"],
+  ["domains","Domains","M8 2a6 6 0 100 12A6 6 0 008 2zM2.3 8h11.4M8 2c1.6 1.8 2.4 3.8 2.4 6S9.6 12.2 8 14c-1.6-1.8-2.4-3.8-2.4-6S6.4 3.8 8 2z"],
+  ["api","API","M6 3.5L2.5 8 6 12.5M10 3.5L13.5 8 10 12.5"],
+  ["billing","Billing","M2 5.5a1 1 0 011-1h10a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1zM2 7.5h12"],
+  ["settings","Settings","M8 10a2 2 0 100-4 2 2 0 000 4zM13 8l1-1.2-1-1.7-1.5.4-1.3-.8L9.8 3H6.2l-.4 1.7-1.3.8L3 5.1 2 6.8 3 8l-1 1.2 1 1.7 1.5-.4 1.3.8.4 1.7h3.6l.4-1.7 1.3-.8 1.5.4 1-1.7z"]
+];
+const RANGES = [["24h","Today"],["7d","7 days"],["30d","30 days"],["90d","90 days"],["custom","Custom"]];
+
+function rnd(seed){ let s = seed; return () => (s = (s*1103515245+12345) % 2147483648) / 2147483648; }
+
+class Component extends DCLogic {
+  state = {
+    screen: "dashboard", expanded: true, range: "30d", tab: "countries", dataState: "data",
+    view: "app", authMode: "register", step: 1, wsName: "Acme Growth", useCase: "Marketing team", newKey: "",
+    drawerOpen: false, utmOpen: true, toast: false,
+    dest: "https://example.com/product", slug: "summer-sale",
+    utm: { source: "instagram", medium: "social", campaign: "summer-sale", term: "", content: "video-01" }
+  };
+
+  go = (screen) => () => this.setState({ screen });
+
+  finalUrl() {
+    const u = this.state.utm, parts = [];
+    if (u.source) parts.push("utm_source=" + u.source);
+    if (u.medium) parts.push("utm_medium=" + u.medium);
+    if (u.campaign) parts.push("utm_campaign=" + u.campaign);
+    if (u.term) parts.push("utm_term=" + u.term);
+    if (u.content) parts.push("utm_content=" + u.content);
+    const base = this.state.dest || "https://example.com";
+    return parts.length ? base + "?" + parts.join("&") : base;
+  }
+
+  qrCells(seed) {
+    const r = rnd(seed), n = 13, cells = [];
+    const finder = (x,y) => (x<3&&y<3)||(x>9&&y<3)||(x<3&&y>9);
+    const ring = (x,y) => { const lx = x>9?x-10:x, ly = y>9?y-10:y; const e = lx===0||lx===2||ly===0||ly===2; const c = lx===1&&ly===1; return e||c; };
+    for (let y=0;y<n;y++) for (let x=0;x<n;x++) {
+      const on = finder(x,y) ? ring(x,y) : r() > 0.52;
+      cells.push(on ? "#15151A" : "transparent");
+    }
+    return cells;
+  }
+
+  renderVals() {
+    const s = this.state;
+    const navBase = "display:flex;align-items:center;gap:11px;width:100%;padding:8px 10px;border:0;border-radius:9px;font-size:13.5px;font-weight:500;cursor:pointer;text-align:left;";
+    const nav = NAV.map(([id,label,d]) => ({
+      id, label, d, go: this.go(id),
+      style: navBase + (s.screen === id || (id==="analytics" && s.screen==="analytics")
+        ? "background:#F2F1EE;color:#15151A;font-weight:600"
+        : "background:transparent;color:#75757F")
+    }));
+
+    const pill = (on) => "border:0;border-radius:7px;padding:5px 11px;font-size:12.5px;white-space:nowrap;font-weight:" + (on?"600":"500") + ";cursor:pointer;" + (on ? "background:#15151A;color:#FFF" : "background:transparent;color:#75757F");
+    const ranges = RANGES.map(([id,label]) => ({ id, label, go: () => this.setState({ range: id }), style: pill(s.range === id) }));
+
+    const r = rnd(s.range === "7d" ? 7 : s.range === "90d" ? 90 : s.range === "24h" ? 24 : 30);
+    const series = Array.from({ length: 30 }, (_, i) => {
+      const base = 0.30 + 0.55 * r() + i * 0.012;
+      const v = Math.min(0.97, base);
+      return { h: (v*66).toFixed(1) + "%", hu: (v*30).toFixed(1) + "%", tip: Math.round(v*4200) + " clicks · " + Math.round(v*2600) + " unique" };
+    });
+
+    const up = "font-size:12px;font-weight:600;color:#167A5B;background:#E6F4EE;padding:2px 7px;border-radius:99px";
+    const down = "font-size:12px;font-weight:600;color:#C2452D;background:#FBEDE9;padding:2px 7px;border-radius:99px";
+    const stats = [
+      { label: "Total clicks", value: "84,392", delta: "+12.4%", deltaStyle: up, sub: "vs. 75,081 previous period" },
+      { label: "Unique visitors", value: "61,208", delta: "+9.1%", deltaStyle: up, sub: "72.5% of total clicks" },
+      { label: "Active links", value: "248", delta: "+18", deltaStyle: up, sub: "12 paused · 31 archived" },
+      { label: "Avg. redirect", value: "38ms", delta: "-4ms", deltaStyle: up, sub: "p95 · 112ms" }
+    ];
+
+    const topLinks = [
+      ["klip.to/summer-sale","example.com/product","12,904","100%"],
+      ["klip.to/creator-drop","shop.acme.com/drop-02","9,481","74%"],
+      ["klip.to/ig-bio","acme.com/linkinbio","7,266","57%"],
+      ["klip.to/newsletter","acme.com/subscribe","5,102","40%"],
+      ["klip.to/webinar-sep","events.acme.com/sep","3,847","30%"],
+      ["klip.to/app-ios","apps.apple.com/acme","2,915","23%"]
+    ].map(([short,dest,clicks,pct]) => ({ short, dest, clicks, pct, }));
+
+    const TABS = { countries: [
+        ["🇧🇷","Brazil","31,204","100%"],["🇺🇸","United States","18,776","60%"],["🇵🇹","Portugal","9,412","30%"],["🇲🇽","Mexico","6,180","20%"],["🇩🇪","Germany","4,022","13%"]
+      ], referrers: [
+        ["◍","Instagram","28,410","100%"],["◍","Direct","19,882","70%"],["◍","Google","12,004","42%"],["◍","YouTube","8,331","29%"],["◍","Facebook","5,120","18%"]
+      ], devices: [
+        ["▮","Mobile","62,118","100%"],["▭","Desktop","18,904","30%"],["▯","Tablet","3,370","6%"]
+      ] };
+    const breakTabs = [["countries","Countries"],["referrers","Referrers"],["devices","Devices"]].map(([id,label]) => ({
+      id, label, go: () => this.setState({ tab: id }),
+      style: "flex:1;border:0;border-radius:6px;padding:6px 8px;font-size:12px;font-weight:" + (s.tab===id?"600":"500") + ";cursor:pointer;" + (s.tab===id ? "background:#FFF;color:#15151A;box-shadow:0 1px 2px rgba(20,20,26,.08)" : "background:transparent;color:#75757F")
+    }));
+    const breakdown = TABS[s.tab].map(([icon,label,value,pct]) => ({ icon, label, value, pct }));
+
+    const statusPill = (st) => st === "Active"
+      ? "display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:99px;background:#E6F4EE;color:#167A5B"
+      : st === "Paused"
+      ? "display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:99px;background:#FDF3E3;color:#956212"
+      : "display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:99px;background:#F2F1EE;color:#75757F";
+
+    const links = [
+      ["◈","klip.to/summer-sale","Summer sale — product","example.com/product?utm_source=instagram","12,904","Summer Campaign","#3B2FE8","2d ago","Active"],
+      ["◇","klip.to/creator-drop","Creator drop 02","shop.acme.com/drop-02","9,481","Creator Program","#C2452D","4d ago","Active"],
+      ["◆","klip.to/ig-bio","Instagram bio","acme.com/linkinbio","7,266","Always-on","#167A5B","3w ago","Active"],
+      ["◈","klip.to/newsletter","Newsletter signup","acme.com/subscribe","5,102","Always-on","#167A5B","1mo ago","Active"],
+      ["◇","klip.to/webinar-sep","September webinar","events.acme.com/sep","3,847","Paid Social","#956212","6d ago","Active"],
+      ["◆","klip.to/app-ios","iOS app","apps.apple.com/acme","2,915","Always-on","#167A5B","2mo ago","Active"],
+      ["◈","klip.to/black-teaser","BF teaser","acme.com/bf","1,204","Summer Campaign","#3B2FE8","1w ago","Paused"],
+      ["◇","klip.to/creator-a","Creator A · story","shop.acme.com/a","986","Creator Program","#C2452D","2w ago","Active"],
+      ["◆","klip.to/spring-24","Spring 24 archive","acme.com/spring","412","Archive","#75757F","5mo ago","Archived"]
+    ].map(([fav,short,title,dest,clicks,project,dot,created,status]) => ({ fav,short,title,dest,clicks,project,dot,created,status,statusStyle: statusPill(status) }));
+
+    const detailStats = [
+      { label: "Total clicks", value: "12,904" },
+      { label: "Unique visitors", value: "9,318" },
+      { label: "Top country", value: "🇧🇷 BR" },
+      { label: "Scan share (QR)", value: "18%" }
+    ];
+    const detailPanels = [
+      { title: "Countries", color: "#3B2FE8", rows: [["Brazil","5,204","100%"],["United States","3,110","60%"],["Portugal","1,782","34%"],["Mexico","1,024","20%"],["Germany","640","12%"]].map(([label,value,pct])=>({label,value,pct})) },
+      { title: "Referrers", color: "#15151A", rows: [["Instagram","6,410","100%"],["Direct","3,120","49%"],["Google","1,884","29%"],["YouTube","902","14%"],["Other","588","9%"]].map(([label,value,pct])=>({label,value,pct})) },
+      { title: "Devices & OS", color: "#167A5B", rows: [["Mobile · iOS","6,118","100%"],["Mobile · Android","3,204","52%"],["Desktop · macOS","1,880","31%"],["Desktop · Windows","1,102","18%"],["Tablet","600","10%"]].map(([label,value,pct])=>({label,value,pct})) },
+      { title: "Browsers", color: "#956212", rows: [["Chrome","5,880","100%"],["Safari","4,102","70%"],["Instagram in-app","2,214","38%"],["Edge","480","8%"],["Firefox","228","4%"]].map(([label,value,pct])=>({label,value,pct})) }
+    ];
+
+    const projects = [
+      ["Summer Campaign","Seasonal promo across paid + organic","86","41,204","#3B2FE8","#EEEBFF","2d ago"],
+      ["Creator Program","Affiliate links per creator","54","22,918","#C2452D","#FBEDE9","4d ago"],
+      ["Always-on","Bio, newsletter, app store","31","14,660","#167A5B","#E6F4EE","1w ago"],
+      ["Paid Social","Meta + TikTok ad destinations","48","9,431","#956212","#FDF3E3","6d ago"],
+      ["Client · Northwind","Agency workspace links","29","5,120","#5B4BD6","#EFEDFB","3w ago"]
+    ].map(([name,desc,links,clicks,dot,tint,updated]) => ({ name,desc,links,clicks,dot,tint,updated }));
+
+    const tree = [
+      ["▸","Instagram","24","14px","#15151A"],
+      ["·","video-01","5,120","34px","#4A4A52"],
+      ["·","video-02","3,880","34px","#4A4A52"],
+      ["·","story-launch","2,410","34px","#4A4A52"],
+      ["▸","Facebook","12","14px","#15151A"],
+      ["·","campaign-01","1,904","34px","#4A4A52"],
+      ["▸","Influencers","18","14px","#15151A"],
+      ["·","creator-a","986","34px","#4A4A52"],
+      ["·","creator-b","742","34px","#4A4A52"]
+    ].map(([mark,name,count,indent,color]) => ({ mark,name,count,indent,color }));
+
+    const qrs = [
+      ["klip.to/summer-sale","2,318","Jun 12"],
+      ["klip.to/creator-drop","1,204","Jul 03"],
+      ["klip.to/menu-pdv","842","Aug 21"],
+      ["klip.to/event-badge","318","Sep 01"]
+    ].map(([short,scans,created], i) => ({ short, scans, created, cells: this.qrCells(11 + i*37) }));
+
+    const domStatus = (st) => st === "Active"
+      ? "font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:99px;background:#E6F4EE;color:#167A5B"
+      : st === "Pending DNS"
+      ? "font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:99px;background:#FDF3E3;color:#956212"
+      : "font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:99px;background:#FBEDE9;color:#C2452D";
+    const domains = [
+      ["klip.to","Default shared domain","248","Active"],
+      ["go.acme.com","Verified Mar 14 · TLS issued","96","Active"],
+      ["go.northwind.io","Waiting for CNAME record","0","Pending DNS"]
+    ].map(([host,note,links,status]) => ({ host,note,links,status,statusStyle: domStatus(status) }));
+
+    const setUtm = (k) => (e) => this.setState({ utm: Object.assign({}, this.state.utm, { [k]: e.target.value }) });
+    const utmFields = [
+      ["Source","source","instagram","auto"],["Medium","medium","social","auto"],
+      ["Campaign","campaign","summer-sale","span 2"],["Term","term","optional","auto"],["Content","content","video-01","auto"]
+    ].map(([label,key,ph,span]) => ({ label, ph, span, value: s.utm[key], onInput: setUtm(key) }));
+
+    const toggle = (on) => ({
+      trackStyle: "width:38px;height:22px;border-radius:99px;flex:none;display:flex;align-items:center;padding:2px;transition:background .15s;background:" + (on ? "#3B2FE8" : "#DDDCD8"),
+      knobStyle: "width:18px;height:18px;border-radius:99px;background:#FFF;display:block;transition:transform .15s;transform:translateX(" + (on ? "16px" : "0") + ")"
+    });
+    const toggles = [
+      ["Hash visitor IPs", "Raw IPs are discarded after geo lookup.", true],
+      ["Store city-level geo", "Adds city column to analytics exports.", true],
+      ["Respect Do Not Track", "Skip analytics for DNT visitors.", false]
+    ].map(([label,desc,on]) => Object.assign({ label, desc }, toggle(on)));
+
+    const ds = s.dataState;
+    const dataStates = [["data","Data"],["empty","Empty"],["loading","Loading"]].map(([id,label]) => ({
+      id, label, go: () => this.setState({ dataState: id }),
+      style: "border:0;border-radius:7px;padding:4px 9px;font-size:11.5px;white-space:nowrap;cursor:pointer;font-weight:" + (ds===id?"600":"500") + ";" + (ds===id ? "background:#FFF;color:#15151A;box-shadow:0 1px 2px rgba(20,20,26,.1)" : "background:transparent;color:#75757F")
+    }));
+    const skeletonBars = Array.from({length:30},(_,i)=> (28 + ((i*37)%62)) + "%");
+
+    const RESERVED = ["api","login","admin","dashboard","settings"];
+    const TAKEN = ["ig-bio","newsletter","creator-drop"];
+    const destTrim = (s.dest || "").trim();
+    const destError = !destTrim ? "" : (!/^https?:\/\/[^\s.]+\.[^\s]{2,}/i.test(destTrim) ? "Enter a full URL including https://" : "");
+    const slugTrim = (s.slug || "").trim();
+    const slugError = !slugTrim ? "" :
+      RESERVED.indexOf(slugTrim) > -1 ? "That path is reserved by Klip." :
+      TAKEN.indexOf(slugTrim) > -1 ? "klip.to/" + slugTrim + " is already in use — try " + slugTrim + "-2." :
+      !/^[a-z0-9-]+$/.test(slugTrim) ? "Use lowercase letters, numbers and hyphens only." : "";
+    const formInvalid = !destTrim || !!destError || !!slugError;
+    const inputBase = "height:38px;padding:0 12px;border-radius:10px;font-size:13.5px;outline:none;border:1px solid ";
+    const errBorder = "#C2452D;box-shadow:0 0 0 3px rgba(194,69,45,.09)";
+
+    const chip = (on) => "border:1px solid " + (on ? "#15151A" : "rgba(20,20,26,.12)") + ";background:" + (on ? "#15151A" : "#FFF") + ";color:" + (on ? "#FFF" : "#4A4A52") + ";border-radius:99px;padding:7px 13px;font-size:12.5px;font-weight:500;white-space:nowrap;cursor:pointer";
+    const useCases = ["Creator / influencer","Marketing team","Agency","Developer"].map(label => ({
+      label, style: chip(s.useCase === label), go: () => this.setState({ useCase: label })
+    }));
+
+    const views = [["auth","Auth"],["onboarding","Onboarding"],["app","App"]].map(([id,label]) => ({
+      id, label, go: () => this.setState({ view: id, step: id === "onboarding" ? 1 : s.step }),
+      style: "border:0;border-radius:7px;padding:4px 9px;font-size:11.5px;white-space:nowrap;cursor:pointer;font-weight:" + (s.view===id?"600":"500") + ";" + (s.view===id ? "background:#15151A;color:#FFF" : "background:transparent;color:#75757F")
+    }));
+
+    const steps = ["Workspace","First link","Done"].map((label, i) => {
+      const n = i + 1, done = s.step >= n;
+      return { label, bar: done ? "#15151A" : "rgba(20,20,26,.12)", color: done ? "#15151A" : "#A3A3AC", weight: s.step === n ? "600" : "500" };
+    });
+
+    const apiKeys = [
+      ["Production server","klip_live_••••••••••••4f2a","Used 2h ago","Full access"],
+      ["Zapier integration","klip_live_••••••••••••91c7","Used 3d ago","Links only"],
+      ["Staging","klip_test_••••••••••••0b18","Never used","Read only"]
+    ].map(([name,masked,used,scope]) => ({
+      name, masked, used, scope,
+      scopeStyle: "font-size:11.5px;font-weight:600;white-space:nowrap;padding:3px 9px;border-radius:99px;" + (scope === "Full access" ? "background:#EEEBFF;color:#3B2FE8" : scope === "Links only" ? "background:#F2F1EE;color:#4A4A52" : "background:#E6F4EE;color:#167A5B")
+    }));
+
+    return {
+      nav, ranges, series, stats, topLinks, breakTabs, breakdown, links,
+      dataStates, skeletonBars, views, steps, useCases, apiKeys,
+      dockOpen: !!s.dockOpen,
+      toggleDock: () => this.setState({ dockOpen: !s.dockOpen }),
+      isAuth: s.view === "auth", isOnboarding: s.view === "onboarding", isApp: s.view === "app",
+      isRegister: s.authMode === "register",
+      authTitle: s.authMode === "register" ? "Create your account" : "Welcome back",
+      authSub: s.authMode === "register" ? "One workspace, unlimited links. No credit card until you decide on the lifetime deal." : "Sign in to your workspace.",
+      authCta: s.authMode === "register" ? "Create account" : "Sign in",
+      authSwitchText: s.authMode === "register" ? "Already have an account?" : "New to Klip?",
+      authSwitchCta: s.authMode === "register" ? "Sign in" : "Create one",
+      pwBars: ["#167A5B","#167A5B","#167A5B","#DDDCD8"],
+      authStats: [["38ms","Median redirect"],["100k","Clicks / month"],["$89","One-time"]].map(([value,label])=>({value,label})),
+      toggleAuthMode: () => this.setState({ authMode: s.authMode === "register" ? "login" : "register" }),
+      signIn: () => this.setState({ view: "onboarding", step: 1 }),
+      step1: s.step === 1, step2: s.step === 2, step3: s.step === 3,
+      stepCta: s.step === 1 ? "Continue" : s.step === 2 ? "Create link" : "Go to dashboard",
+      nextStep: () => s.step >= 3 ? this.setState({ view: "app", screen: "dashboard" }) : this.setState({ step: s.step + 1 }),
+      skipOnboarding: () => this.setState({ view: "app", screen: "dashboard" }),
+      wsName: s.wsName,
+      wsSlugSample: (s.wsName || "acme").toLowerCase().replace(/[^a-z0-9]+/g, "-").split("-")[0] + "-launch",
+      setWsName: (e) => this.setState({ wsName: e.target.value }),
+      isApi: s.screen === "api",
+      newKey: s.newKey,
+      createKey: () => this.setState({ newKey: "klip_live_" + Math.random().toString(36).slice(2, 12) + Math.random().toString(36).slice(2, 12) }),
+      curl: 'curl -X POST https://api.klip.to/v1/links \\\n  -H "Authorization: Bearer $KLIP_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"destinationUrl":"https://example.com","slug":"summer"}\'\n\n{ "id": "link_123", "url": "https://klip.to/summer" }',
+      endpoints: [["POST","/v1/links","#167A5B"],["GET","/v1/links","#3B2FE8"],["GET","/v1/links/:id","#3B2FE8"],["PATCH","/v1/links/:id","#956212"],["DELETE","/v1/links/:id","#C2452D"],["GET","/v1/links/:id/analytics","#3B2FE8"]].map(([method,path,color])=>({method,path,color})), four: [0,0,0,0], eight: [0,0,0,0,0,0,0,0],
+      dashLoading: s.screen === "dashboard" && ds === "loading",
+      dashEmpty: s.screen === "dashboard" && ds === "empty",
+      linksLoading: s.screen === "links" && ds === "loading",
+      linksEmpty: s.screen === "links" && ds === "empty",
+      emptyTips: [
+        { step: "01", title: "Shorten", desc: "Paste any destination and pick a memorable slug." },
+        { step: "02", title: "Share", desc: "Drop it in a bio, ad, or QR code on a printed piece." },
+        { step: "03", title: "Optimize", desc: "See which country, device and referrer converts best." }
+      ],
+      destError, slugError, formInvalid,
+      slugOk: !!slugTrim && !slugError,
+      destInputStyle: inputBase + (destError ? errBorder : "rgba(20,20,26,.1)"),
+      slugInputStyle: "width:100%;height:38px;padding:0 74px 0 12px;border-radius:10px;font-size:13.5px;font-family:'JetBrains Mono',monospace;outline:none;border:1px solid " + (slugError ? errBorder : "rgba(20,20,26,.1)"),
+      submitStyle: "height:36px;padding:0 16px;border:0;border-radius:9px;font-size:13px;font-weight:600;" + (formInvalid ? "background:#DDDCD8;color:#96959B;cursor:not-allowed" : "background:#15151A;color:#FFF;cursor:pointer"),
+      detailStats, detailPanels, projects, tree, qrs, domains, utmFields, toggles,
+      expanded: s.expanded,
+      sidebarWidth: s.expanded ? "236px" : "68px",
+      rangeLabel: (RANGES.find(x => x[0] === s.range) || [])[1],
+      isDashboard: s.screen === "dashboard" && ds === "data", isLinks: s.screen === "links" && ds === "data",
+      isAnalytics: s.screen === "analytics", isProjects: s.screen === "projects",
+      isQr: s.screen === "qr", isDomains: s.screen === "domains",
+      isBilling: s.screen === "billing", isSettings: s.screen === "settings",
+      detailActions: ["Copy", "QR code", "Edit", "Pause"],
+      entitlements: ["Unlimited short links", "Unlimited projects & folders", "QR codes (PNG + SVG)", "Full click analytics", "UTM builder", "3 custom domains"],
+      invoices: [["Mar 12, 2026","$89.00"],["—","LTD · no renewal"]].map(([date,amount])=>({date,amount})),
+      filters: [{label:"Project:",value:"All"},{label:"Status:",value:"Active"},{label:"Sort:",value:"Clicks"}],
+      drawerOpen: s.drawerOpen, utmOpen: s.utmOpen, toast: s.toast,
+      utmToggleLabel: s.utmOpen ? "Hide" : "5 available",
+      dest: s.dest, slug: s.slug, slugShown: s.slug || "summer-sale",
+      finalUrl: this.finalUrl(),
+      toggleSidebar: () => this.setState({ expanded: !s.expanded }),
+      toggleWorkspace: () => {},
+      toggleUtm: () => this.setState({ utmOpen: !s.utmOpen }),
+      openDrawer: () => this.setState({ drawerOpen: true }),
+      closeDrawer: () => this.setState({ drawerOpen: false }),
+      goLinks: this.go("links"),
+      openAnalytics: () => this.setState({ screen: "analytics", drawerOpen: false, toast: false }),
+      setDest: (e) => this.setState({ dest: e.target.value }),
+      setSlug: (e) => this.setState({ slug: e.target.value.replace(/\s+/g, "-").toLowerCase() }),
+      randomSlug: () => this.setState({ slug: Math.random().toString(36).slice(2, 8) }),
+      createLink: () => {
+        if (formInvalid) return;
+        this.setState({ drawerOpen: false, toast: true, dataState: "data" });
+        clearTimeout(this._t);
+        this._t = setTimeout(() => this.setState({ toast: false }), 4500);
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

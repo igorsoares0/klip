@@ -1,0 +1,28 @@
+"use client";
+
+import { createContext, useContext } from "react";
+
+export interface ToastState {
+  slug: string;
+}
+
+export interface AppShellValue {
+  expanded: boolean;
+  toggleSidebar: () => void;
+  openDrawer: () => void;
+  closeDrawer: () => void;
+  drawerOpen: boolean;
+  toast: ToastState | null;
+  showToast: (toast: ToastState) => void;
+  dismissToast: () => void;
+}
+
+export const AppShellContext = createContext<AppShellValue | null>(null);
+
+export function useAppShell(): AppShellValue {
+  const value = useContext(AppShellContext);
+  if (!value) {
+    throw new Error("useAppShell must be used inside <AppShell>");
+  }
+  return value;
+}
