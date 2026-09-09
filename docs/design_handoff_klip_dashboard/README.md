@@ -4,7 +4,7 @@
 
 Klip is a link-management SaaS (short links, branded domains, click analytics, UTM builder, QR codes, projects/folders, API, Paddle Lifetime Deal). This package covers the **authenticated product**: auth, onboarding, and eight dashboard screens, plus their empty, loading and error states.
 
-Target stack per the product spec: **Next.js + TypeScript + React + Tailwind CSS**, Prisma/Neon, Auth.js, Paddle. The full product spec ships alongside this README as `product-spec.md`.
+Target stack per the product spec: **Next.js + TypeScript + React + Tailwind CSS**, Prisma/Neon, Auth.js, Paddle. The full product spec lives at [`../link-management-saas-spec.md`](../link-management-saas-spec.md).
 
 ## About the Design Files
 
@@ -278,4 +278,4 @@ No binary assets. Everything is inline SVG (nav icons, chevrons, checks, alerts,
 ## Files
 
 - `Klip Dashboard.dc.html` — the full clickable prototype (all screens and states).
-- `product-spec.md` — the original product/architecture spec this design implements (see §20–22 for dashboard UX requirements).
+- `product-spec.md` — a pointer to `../link-management-saas-spec.md`, the product/architecture spec this design implements (see §20–22 for dashboard UX requirements, and §42 for implementation amendments).

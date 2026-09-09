@@ -1,8 +1,12 @@
 # Spec-Driven Development — Link Management & Analytics SaaS
 
 **Status:** Approved  
-**Version:** 1.0  
-**Date:** 2026-09-08
+**Version:** 1.1  
+**Date:** 2026-09-08 · **Amended:** 2026-09-09
+
+> Sections 1–41 are the approved v1.0 text. **§42 records where the implementation
+> deliberately departs from them and is authoritative where the two disagree** — read it
+> before implementing anything described below, particularly the data model in §8.
 
 ---
 
@@ -1935,3 +1939,106 @@ Future scale:
 ```
 
 The initial implementation should remain a **modular monolith using Next.js + Prisma + Neon**, deployed on Hetzner, with Auth.js for authentication and Paddle for the LTD. Redis and specialized analytics infrastructure are intentionally deferred until actual traffic justifies them.
+
+---
+
+# 42. Implementation Amendments
+
+**Amended:** 2026-09-09 · **Spec version:** 1.1
+
+Sections 1–41 are the approved v1.0 specification and are left as written. This section
+records where the implementation deliberately departs from them, and why. **Where the two
+disagree, this section is authoritative.**
+
+## 42.1 Data model
+
+The entity field lists in §8 could not be implemented as written.
+
+### `Link.domainId` — required
+
+§8 (line 427) requires `slug` to be "unique within its domain context" and §16 requires the
+resolver to match on `hostname + slug`. The `Link` field list has no domain reference, which
+makes both rules impossible to express. The implementation adds `domainId` with
+`@@unique([domainId, slug])`. This composite key is the resolver's lookup key.
+
+### `LinkClick.workspaceId` — denormalized
+
+§5 (line 173) states every customer-owned resource must contain `workspaceId`; the §10 event
+payload omits it. Without the column, every workspace-level aggregate joins through `Link`.
+It is stored on the click row.
+
+### `Link.clickCount` — denormalized counter
+
+§22 puts a `Clicks` column on the link list and §11 sorts by it, while §12 describes only a
+raw `link_clicks` table. Computing that column by aggregation is one scan per row per page
+load. The counter is incremented on redirect; the raw table remains the source for
+breakdowns and time series.
+
+Deferred: no daily rollup table. Add one when scans of the raw table become slow — not
+before (§40 principle 8 applied to Postgres itself).
+
+### `LinkClick.isBot`
+
+The spec describes no bot or crawler filtering anywhere. For a public redirect service this
+is a genuine gap: link unfurlers inflate click counts. The column exists and every aggregate
+already excludes bot traffic; detection lands with the resolver.
+
+### `LinkClick.viaQr`
+
+§15 makes QR codes a headline feature but no field distinguishes a scan from a direct click,
+so "scan share" is not derivable. The resolver sets the flag.
+
+### `Folder.parentId`
+
+§8 models `Folder` as flat. §14 and the design handoff both show a two-level tree. Added as
+a self-relation.
+
+### UI-driven fields
+
+`Project.color` (the accent dot), `Workspace.hashVisitorIps` / `storeCityGeo` /
+`respectDoNotTrack` (the §23 privacy commitments, made per-workspace settings on the
+Settings screen), and `ApiKey.scope` / `keyPrefix` / `last4` (scope pill and masked display;
+`hashedKey` remains the only stored secret, per §17).
+
+## 42.2 Dashboard metrics
+
+§20 lists `Top Link` as the fourth KPI; the design handoff shows `Avg. redirect`. Neither is
+implemented as specified.
+
+**`Avg. redirect` is not a click-table metric.** §35 already places "Redirect latency" under
+observability. Storing a duration on every click row would be the wrong column in the wrong
+place. The fourth card shows **QR scans**, derived from `viaQr`.
+
+## 42.3 Indexes
+
+§8 specifies no indexes. The ones that matter:
+
+```text
+Link       @@unique([domainId, slug])       resolver lookup
+Link       @@index([workspaceId, status])   link list
+Link       @@index([workspaceId, clickCount]) sort by clicks
+LinkClick  @@index([linkId, timestamp])     link detail time series
+LinkClick  @@index([workspaceId, timestamp]) workspace time series
+```
+
+## 42.4 Stack
+
+**Prisma is pinned to 7.10.0.** At implementation time `prisma@latest` resolved to
+`8.0.0-rc.13` while `@prisma/client@latest` was still `7.10.0`; no `prisma@8.0.0` existed.
+Prisma 8 also replaces the query API entirely
+(`db.orm.public.Link.where({...}).all()`). Revisit once 8 is generally available — the schema
+is largely portable, the query layer is not.
+
+Prisma 7 requires a **driver adapter** (`@prisma/adapter-pg`, TCP — correct for the
+long-running Hetzner container of §26) and moves the connection string out of the schema into
+`prisma.config.ts`.
+
+**Development uses Postgres in Docker**, not Neon. Neon remains the production database.
+
+## 42.5 Structure
+
+- §33's module list gains `projects/` (projects and folders do not belong in `links/`).
+- §32's `dashboard/` sits inside an `(app)` route group, so the authenticated shell can be a
+  layout without appearing in the URL. `(marketing)` is not built — the design handoff covers
+  the authenticated product only.
+- Retention and pruning of `link_clicks` remain unspecified; no policy is implemented.
