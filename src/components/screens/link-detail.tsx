@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
@@ -8,19 +7,20 @@ import { Button } from "@/components/ui/button";
 import { BarChart } from "@/components/ui/bar-chart";
 import { BreakdownPanelCard } from "@/components/ui/breakdown";
 import { ChevronLeft } from "@/components/icons";
-import { buildSeries, detailPanels, detailStats } from "@/lib/mock/analytics";
-import { getLink } from "@/lib/mock/links";
-import { buildFinalUrl } from "@/lib/utils";
+import type { BreakdownPanel, LinkStatus, SeriesPoint, Stat } from "@/lib/types";
 
 const ACTIONS = ["Copy", "QR code", "Edit", "Pause"];
 
-export function LinkDetailScreen({ id }: { id: string }) {
-  const link = getLink(id);
-  if (!link) notFound();
+export interface LinkDetailData {
+  shortUrl: string;
+  destination: string;
+  status: LinkStatus;
+  stats: Stat[];
+  series: SeriesPoint[];
+  panels: BreakdownPanel[];
+}
 
-  const series = buildSeries("30d", 1);
-  const destination = buildFinalUrl(link.destinationUrl, link.utm);
-
+export function LinkDetailScreen({ data }: { data: LinkDetailData }) {
   return (
     <div className="mx-auto max-w-content animate-klip-in">
       <Link
@@ -32,16 +32,16 @@ export function LinkDetailScreen({ id }: { id: string }) {
 
       <PageHeader
         mono
-        title={`${link.domain}/${link.slug}`}
-        badge={<LinkStatusBadge status={link.status} />}
-        sub={<span className="break-all font-mono text-meta">{destination}</span>}
+        title={data.shortUrl}
+        badge={<LinkStatusBadge status={data.status} />}
+        sub={<span className="break-all font-mono text-meta">{data.destination}</span>}
         action={ACTIONS.map((action) => (
           <Button key={action}>{action}</Button>
         ))}
       />
 
       <div className="grid gap-[14px] [grid-template-columns:repeat(auto-fit,minmax(180px,1fr))]">
-        {detailStats.map((stat) => (
+        {data.stats.map((stat) => (
           <StatCard key={stat.label} stat={stat} />
         ))}
       </div>
@@ -51,12 +51,12 @@ export function LinkDetailScreen({ id }: { id: string }) {
           Clicks · last 30 days
         </h2>
         <div className="mt-5">
-          <BarChart series={series} variant="single" height={150} />
+          <BarChart series={data.series} variant="single" height={150} />
         </div>
       </Card>
 
       <div className="mt-[18px] grid gap-[14px] [grid-template-columns:repeat(auto-fit,minmax(280px,1fr))]">
-        {detailPanels.map((panel) => (
+        {data.panels.map((panel) => (
           <BreakdownPanelCard key={panel.title} panel={panel} />
         ))}
       </div>

@@ -4,8 +4,19 @@ import { Card } from "@/components/ui/card";
 import { Badge, LinkStatusBadge } from "@/components/ui/badge";
 import { Button, IconButton } from "@/components/ui/button";
 import { ChevronDown, DotsIcon } from "@/components/icons";
-import { links, linkCounts, linkFilters } from "@/lib/mock/links";
-import { formatNumber } from "@/lib/utils";
+import { formatNumber } from "@/shared/format";
+import type { LinkRow } from "@/links/queries";
+
+const FILTERS = [
+  { label: "Project:", value: "All" },
+  { label: "Status:", value: "Active" },
+  { label: "Sort:", value: "Clicks" },
+];
+
+export interface LinksData {
+  links: LinkRow[];
+  counts: { active: number; paused: number; archived: number; total: number };
+}
 
 /**
  * The header row and every data row share this grid and min-width inside an
@@ -24,12 +35,14 @@ const DOT_COLORS: Record<number, string> = {
   6: "var(--color-dot-6)",
 };
 
-export function LinksScreen() {
+export function LinksScreen({ data }: { data: LinksData }) {
+  const { links, counts } = data;
+
   return (
     <div className="mx-auto max-w-content animate-klip-in">
       <PageHeader
         title="Links"
-        sub={`${linkCounts.active} active · ${linkCounts.paused} paused · ${linkCounts.archived} archived`}
+        sub={`${counts.active} active · ${counts.paused} paused · ${counts.archived} archived`}
       />
 
       <div className="mb-[14px] flex flex-wrap items-center gap-2">
@@ -38,7 +51,7 @@ export function LinksScreen() {
           placeholder="Filter by slug, destination or title"
           className="h-9 min-w-[220px] flex-1 rounded-input border border-border-strong bg-surface px-3 text-body text-ink transition-colors hover:border-border-hover"
         />
-        {linkFilters.map((filter) => (
+        {FILTERS.map((filter) => (
           <button
             key={filter.label}
             type="button"
@@ -132,7 +145,7 @@ export function LinksScreen() {
 
         <div className="flex items-center justify-between gap-3 border-t border-border px-[18px] py-3">
           <span className="text-meta text-muted">
-            Showing {links.length} of {linkCounts.total} links
+            Showing {links.length} of {counts.total} links
           </span>
           <div className="flex items-center gap-2">
             <Button size="sm" disabled>

@@ -11,9 +11,6 @@ import {
   Label,
   Select,
 } from "@/components/ui/form";
-import { projects } from "@/lib/mock/projects";
-import { folderTree } from "@/lib/mock/projects";
-import { domains } from "@/lib/mock/domains";
 import type { Utm } from "@/lib/types";
 import {
   DEFAULT_DOMAIN,
@@ -40,14 +37,22 @@ const EMPTY_UTM: Utm = {
   content: "video-01",
 };
 
+export interface DrawerOptions {
+  projects: Array<{ id: string; name: string }>;
+  folders: Array<{ id: string; name: string }>;
+  domains: Array<{ id: string; host: string }>;
+}
+
 export function CreateLinkDrawer({
   open,
   onClose,
   onCreated,
+  options,
 }: {
   open: boolean;
   onClose: () => void;
   onCreated: (slug: string) => void;
+  options: DrawerOptions;
 }) {
   const [destination, setDestination] = useState("https://example.com/product");
   const [slug, setSlug] = useState("summer-sale");
@@ -134,7 +139,7 @@ export function CreateLinkDrawer({
           <div className="grid grid-cols-[150px_1fr] gap-3">
             <Field label="Domain">
               <Select defaultValue={DEFAULT_DOMAIN} className="h-[38px]">
-                {domains.map((domain) => (
+                {options.domains.map((domain) => (
                   <option key={domain.id} value={domain.host}>
                     {domain.host}
                   </option>
@@ -234,7 +239,7 @@ export function CreateLinkDrawer({
             <Field label="Project">
               <Select className="h-[38px]" defaultValue="">
                 <option value="">No project</option>
-                {projects.map((project) => (
+                {options.projects.map((project) => (
                   <option key={project.id} value={project.id}>
                     {project.name}
                   </option>
@@ -244,13 +249,11 @@ export function CreateLinkDrawer({
             <Field label="Folder">
               <Select className="h-[38px]" defaultValue="">
                 <option value="">No folder</option>
-                {folderTree
-                  .filter((node) => node.depth === 1)
-                  .map((node) => (
-                    <option key={node.id} value={node.id}>
-                      {node.name}
-                    </option>
-                  ))}
+                {options.folders.map((folder) => (
+                  <option key={folder.id} value={folder.id}>
+                    {folder.name}
+                  </option>
+                ))}
               </Select>
             </Field>
           </div>

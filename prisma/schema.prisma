@@ -303,6 +303,10 @@ model LinkClick {
   os             String?
   userAgent      String?
 
+  /// Set when the click arrived through a QR scan rather than the bare link.
+  /// Without it "scan share" is not derivable — the spec models no such flag.
+  viaQr Boolean @default(false)
+
   /// Not in the spec, which describes no bot filtering at all — a real gap for a
   /// click-analytics product, since link unfurlers inflate counts. Detection
   /// lands with the resolver; the column exists so it can be excluded later.

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { navItems } from "@/lib/nav";
-import { clickUsage } from "@/lib/mock/workspace";
 import { ChevronLeft, ChevronRight, LinkGlyph, NavIcon } from "@/components/icons";
 import { ProgressBar } from "@/components/ui/progress";
 
@@ -13,12 +12,21 @@ function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+export interface UsageMeter {
+  label: string;
+  display: string;
+  pct: number;
+  note: string;
+}
+
 export function Sidebar({
   expanded,
   onToggle,
+  usage,
 }: {
   expanded: boolean;
   onToggle: () => void;
+  usage: UsageMeter;
 }) {
   const pathname = usePathname();
 
@@ -64,13 +72,13 @@ export function Sidebar({
         {expanded ? (
           <div className="rounded-input bg-canvas p-3">
             <div className="flex items-baseline justify-between gap-2">
-              <span className="text-caption text-muted">{clickUsage.label}</span>
+              <span className="text-caption text-muted">{usage.label}</span>
               <span className="font-mono text-caption font-semibold text-ink">
-                {clickUsage.display}
+                {usage.display}
               </span>
             </div>
-            <ProgressBar value={clickUsage.pct} className="mt-[9px]" />
-            <p className="mt-[9px] text-[11px] text-faint">{clickUsage.note}</p>
+            <ProgressBar value={usage.pct} className="mt-[9px]" />
+            <p className="mt-[9px] text-[11px] text-faint">{usage.note}</p>
           </div>
         ) : null}
 

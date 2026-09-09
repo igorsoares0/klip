@@ -1,8 +1,9 @@
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { qrCells, qrCodes } from "@/lib/mock/qr";
-import { DEFAULT_DOMAIN, formatNumber } from "@/lib/utils";
+import { qrCells } from "@/qr/placeholder";
+import { formatNumber } from "@/shared/format";
+import type { QrCard } from "@/qr/queries";
 
 /**
  * The 13x13 grid is the prototype's placeholder pattern.
@@ -30,7 +31,7 @@ function QrPreview({ seed }: { seed: number }) {
   );
 }
 
-export function QrCodesScreen() {
+export function QrCodesScreen({ qrCodes }: { qrCodes: QrCard[] }) {
   return (
     <div className="mx-auto max-w-content animate-klip-in">
       <PageHeader
@@ -43,7 +44,7 @@ export function QrCodesScreen() {
           <Card key={qr.id} className="px-4 pb-4 pt-4">
             <QrPreview seed={11 + index * 37} />
             <p className="mt-3 font-mono text-cell font-medium text-ink">
-              {DEFAULT_DOMAIN}/{qr.slug}
+              {qr.domain}/{qr.slug}
             </p>
             <p className="mt-1 text-[11.5px] text-muted">
               {formatNumber(qr.scans)} scans · {qr.createdAt}

@@ -75,7 +75,3 @@ export function randomSlug(): string {
   const word = words[Math.floor(Math.random() * words.length)];
   return `${word}-${Math.random().toString(36).slice(2, 6)}`;
 }
-
-export function formatNumber(value: number): string {
-  return value.toLocaleString("en-US");
-}

@@ -2,9 +2,16 @@
 
 import { ChevronDown, PlusIcon, SearchIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
-import { currentUser, workspace } from "@/lib/mock/workspace";
 
-export function Header({ onCreateLink }: { onCreateLink: () => void }) {
+export function Header({
+  onCreateLink,
+  workspace,
+  userInitials,
+}: {
+  onCreateLink: () => void;
+  workspace: { name: string; avatar: string };
+  userInitials: string;
+}) {
   return (
     <header className="sticky top-0 z-30 flex h-[60px] items-center gap-3 border-b border-border bg-[rgba(245,244,241,.86)] px-6 backdrop-blur-[10px]">
       <button
@@ -46,7 +53,7 @@ export function Header({ onCreateLink }: { onCreateLink: () => void }) {
       </Button>
 
       <span className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-pill bg-accent text-[11.5px] font-semibold text-white">
-        {currentUser.initials}
+        {userInitials}
       </span>
     </header>
   );

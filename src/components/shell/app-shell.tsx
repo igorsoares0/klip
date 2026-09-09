@@ -8,13 +8,30 @@ import {
   type ReactNode,
 } from "react";
 import { AppShellContext, type ToastState } from "./app-shell-context";
-import { CreateLinkDrawer } from "./create-link-drawer";
+import { CreateLinkDrawer, type DrawerOptions } from "./create-link-drawer";
 import { Header } from "./header";
-import { Sidebar } from "./sidebar";
+import { Sidebar, type UsageMeter } from "./sidebar";
 import { Toast } from "./toast";
 import * as sidebarStore from "./sidebar-store";
 
-export function AppShell({ children }: { children: ReactNode }) {
+export interface ShellWorkspace {
+  name: string;
+  avatar: string;
+}
+
+export function AppShell({
+  children,
+  workspace,
+  user,
+  usage,
+  drawerOptions,
+}: {
+  children: ReactNode;
+  workspace: ShellWorkspace;
+  user: { initials: string };
+  usage: UsageMeter;
+  drawerOptions: DrawerOptions;
+}) {
   const expanded = useSyncExternalStore(
     sidebarStore.subscribe,
     sidebarStore.getSnapshot,
@@ -55,9 +72,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <AppShellContext.Provider value={value}>
       <div className="flex min-h-screen bg-canvas">
-        <Sidebar expanded={expanded} onToggle={toggleSidebar} />
+        <Sidebar expanded={expanded} onToggle={toggleSidebar} usage={usage} />
         <div className="flex min-w-0 flex-1 flex-col">
-          <Header onCreateLink={openDrawer} />
+          <Header
+            onCreateLink={openDrawer}
+            workspace={workspace}
+            userInitials={user.initials}
+          />
           <main className="flex-1 px-6 pb-[60px] pt-[26px]">{children}</main>
         </div>
       </div>
@@ -66,6 +87,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         open={drawerOpen}
         onClose={closeDrawer}
         onCreated={(slug) => showToast({ slug })}
+        options={drawerOptions}
       />
       {toast ? <Toast toast={toast} onDismiss={dismissToast} /> : null}
     </AppShellContext.Provider>

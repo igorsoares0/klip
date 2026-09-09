@@ -5,7 +5,6 @@ import {
   TAKEN_SLUGS,
   buildFinalUrl,
   cn,
-  formatNumber,
   normalizeSlug,
   randomSlug,
   validateDestination,
@@ -188,18 +187,6 @@ describe("randomSlug", () => {
     for (let i = 0; i < 50; i++) {
       expect(validateSlug(randomSlug())).toBeNull();
     }
-  });
-});
-
-describe("formatNumber", () => {
-  it("groups thousands", () => {
-    expect(formatNumber(84392)).toBe("84,392");
-    expect(formatNumber(1000000)).toBe("1,000,000");
-  });
-
-  it("leaves small numbers alone", () => {
-    expect(formatNumber(0)).toBe("0");
-    expect(formatNumber(412)).toBe("412");
   });
 });
 

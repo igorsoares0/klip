@@ -1,11 +1,19 @@
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { CheckIcon } from "@/components/icons";
-import { entitlements, invoices, plan, usage } from "@/lib/mock/billing";
-import { formatNumber } from "@/lib/utils";
+import { formatNumber } from "@/shared/format";
+import type { Invoice } from "@/lib/types";
 
-export function BillingScreen() {
-  const pct = Math.round((usage.used / usage.limit) * 100);
+export interface BillingData {
+  plan: { name: string; badge: string; purchased: string };
+  usage: { label: string; used: number; limit: number; resets: string };
+  invoices: Invoice[];
+  entitlements: string[];
+}
+
+export function BillingScreen({ data }: { data: BillingData }) {
+  const { plan, usage, invoices, entitlements } = data;
+  const pct = Math.min(100, Math.round((usage.used / usage.limit) * 100));
 
   return (
     <div className="mx-auto max-w-content animate-klip-in">

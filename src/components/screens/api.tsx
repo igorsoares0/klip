@@ -6,8 +6,9 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScopeBadge } from "@/components/ui/badge";
 import { PlusIcon } from "@/components/icons";
-import { apiKeys, endpoints, quickStartCurl } from "@/lib/mock/api-keys";
+import { endpoints, quickStartCurl } from "@/api-keys/docs";
 import { cn } from "@/lib/utils";
+import type { ApiKeyRow } from "@/api-keys/queries";
 
 const TONE: Record<string, string> = {
   positive: "text-positive",
@@ -16,7 +17,7 @@ const TONE: Record<string, string> = {
   danger: "text-danger",
 };
 
-export function ApiScreen() {
+export function ApiScreen({ apiKeys }: { apiKeys: ApiKeyRow[] }) {
   const [newKey, setNewKey] = useState<string | null>(null);
 
   return (

@@ -1,9 +1,15 @@
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { FolderIcon, PlusIcon } from "@/components/icons";
-import { folderTree, projects } from "@/lib/mock/projects";
-import { formatNumber } from "@/lib/utils";
+import { formatNumber } from "@/shared/format";
 import type { ProjectDot } from "@/lib/types";
+import type { FolderNodeRow, ProjectCard } from "@/projects/queries";
+
+export interface ProjectsData {
+  projects: ProjectCard[];
+  tree: FolderNodeRow[];
+  treeProjectName: string | null;
+}
 
 const DOT: Record<ProjectDot, { color: string; tint: string }> = {
   1: { color: "var(--color-dot-1)", tint: "#EEEBFF" },
@@ -14,7 +20,9 @@ const DOT: Record<ProjectDot, { color: string; tint: string }> = {
   6: { color: "var(--color-dot-6)", tint: "#F2F1EE" },
 };
 
-export function ProjectsScreen() {
+export function ProjectsScreen({ data }: { data: ProjectsData }) {
+  const { projects, tree } = data;
+
   return (
     <div className="mx-auto max-w-content animate-klip-in">
       <PageHeader
@@ -66,11 +74,11 @@ export function ProjectsScreen() {
 
         <Card className="px-5 pb-4 pt-4">
           <h2 className="text-[13.5px] font-semibold text-ink">
-            Summer Campaign
+            {data.treeProjectName ?? "Folders"}
           </h2>
           <p className="mt-1 text-meta text-muted">Folders inside this project</p>
           <div className="mt-3 flex flex-col">
-            {folderTree.map((node) => (
+            {tree.map((node) => (
               <div
                 key={node.id}
                 className="-mx-5 flex items-center gap-2 px-5 py-[7px] transition-colors hover:bg-surface-hover"

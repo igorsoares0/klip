@@ -12,10 +12,13 @@ import { rnd } from "../src/lib/rng";
 import type { DeviceType } from "../src/generated/prisma/enums";
 
 /**
- * Seeds the database with exactly the fixtures the screens already render, so
- * swapping a screen from mock to DB is a like-for-like comparison.
+ * Seeds the database with the fixtures the screens were designed against.
  *
  * Idempotent: every row uses a stable id and is upserted.
+ *
+ * The click events are generated *proportionally* to each link's designed click
+ * count, and `Link.clickCount` is then derived from the rows actually written —
+ * otherwise the links table and the detail chart would disagree.
  */
 
 const db = new PrismaClient({
@@ -25,20 +28,65 @@ const db = new PrismaClient({
 const WORKSPACE_ID = "ws_acme";
 const USER_ID = "usr_maria";
 
+/** Visitors revisit, so unique visitors land near 70% of clicks, as designed. */
+const VISITOR_POOL = 0.72;
+
 const toggle = (id: string) =>
   privacyToggles.find((t) => t.id === id)?.enabled ?? false;
 
-/** Two links the QR screen references that are not in the links table fixture. */
+/** Two links the QR screen references that are not in the links fixture. */
 const EXTRA_LINKS = [
-  { id: "link_menu_pdv", slug: "menu-pdv", title: "In-store menu", destinationUrl: "https://acme.com/menu" },
-  { id: "link_event_badge", slug: "event-badge", title: "Event badge", destinationUrl: "https://events.acme.com/badge" },
+  { id: "link_menu_pdv", slug: "menu-pdv", title: "In-store menu", destinationUrl: "https://acme.com/menu", clicks: 900 },
+  { id: "link_event_badge", slug: "event-badge", title: "Event badge", destinationUrl: "https://events.acme.com/badge", clicks: 340 },
 ];
 
-const DEVICES: DeviceType[] = ["MOBILE", "DESKTOP", "TABLET"];
-const COUNTRIES = ["BR", "US", "PT", "MX", "DE"];
-const REFERRERS = ["instagram.com", "google.com", null, "youtube.com", "facebook.com"];
-const BROWSERS = ["Chrome", "Safari", "Edge", "Firefox"];
-const OSES = ["iOS", "Android", "macOS", "Windows"];
+/** Weighted so one country dominates, like the design's Brazil-heavy split. */
+const COUNTRIES: Array<[string, number]> = [
+  ["BR", 0.38],
+  ["US", 0.23],
+  ["PT", 0.15],
+  ["MX", 0.14],
+  ["DE", 0.1],
+];
+
+const REFERRERS: Array<[string | null, number]> = [
+  ["instagram.com", 0.34],
+  [null, 0.24], // direct
+  ["google.com", 0.18],
+  ["youtube.com", 0.13],
+  ["facebook.com", 0.11],
+];
+
+const DEVICES: Array<[DeviceType, number]> = [
+  ["MOBILE", 0.72],
+  ["DESKTOP", 0.22],
+  ["TABLET", 0.06],
+];
+
+const BROWSERS: Array<[string, number]> = [
+  ["Chrome", 0.42],
+  ["Safari", 0.33],
+  ["Instagram in-app", 0.16],
+  ["Edge", 0.06],
+  ["Firefox", 0.03],
+];
+
+const OSES: Array<[string, number]> = [
+  ["iOS", 0.4],
+  ["Android", 0.32],
+  ["macOS", 0.16],
+  ["Windows", 0.12],
+];
+
+/** Picks from a weighted table using the seeded PRNG. */
+function weighted<T>(table: Array<[T, number]>, roll: number): T {
+  let acc = 0;
+  for (const [value, weight] of table) {
+    acc += weight;
+    if (roll <= acc) return value;
+  }
+  return table[table.length - 1][0];
+}
 
 async function main() {
   const user = await db.user.upsert({
@@ -71,7 +119,7 @@ async function main() {
     create: { workspaceId: workspace.id, userId: user.id, role: "OWNER" },
   });
 
-  // Domains — klip.to is the shared system domain and belongs to no workspace.
+  // klip.to is the shared system domain and belongs to no workspace.
   for (const domain of mockDomains) {
     const shared = domain.host === "klip.to";
     await db.customDomain.upsert({
@@ -108,8 +156,8 @@ async function main() {
     });
   }
 
-  // The tree is a flat list with a depth flag: depth 0 opens a group, and every
-  // depth-1 row that follows belongs to it.
+  // The tree is a flat list with a depth flag: a depth-0 row opens a group, and
+  // every depth-1 row that follows belongs to it.
   let currentParent: string | null = null;
   for (const node of folderTree) {
     await db.folder.upsert({
@@ -126,7 +174,13 @@ async function main() {
     if (node.depth === 0) currentParent = node.id;
   }
 
+  const ageInDays: Record<string, number> = {
+    "2d ago": 2, "4d ago": 4, "6d ago": 6, "1w ago": 7, "2w ago": 14,
+    "3w ago": 21, "1mo ago": 30, "2mo ago": 60, "5mo ago": 150,
+  };
+
   for (const link of mockLinks) {
+    const days = ageInDays[link.createdAt] ?? 30;
     await db.link.upsert({
       where: { id: link.id },
       update: {},
@@ -139,7 +193,7 @@ async function main() {
         destinationUrl: link.destinationUrl,
         title: link.title,
         status: link.status,
-        clickCount: link.clicks,
+        createdAt: new Date(Date.now() - days * 86_400_000),
         utmSource: link.utm.source || null,
         utmMedium: link.utm.medium || null,
         utmCampaign: link.utm.campaign || null,
@@ -154,10 +208,14 @@ async function main() {
       where: { id: link.id },
       update: {},
       create: {
-        ...link,
+        id: link.id,
+        slug: link.slug,
+        title: link.title,
+        destinationUrl: link.destinationUrl,
         workspaceId: workspace.id,
         domainId: "dom_klip",
         status: "ACTIVE",
+        createdAt: new Date(Date.now() - 45 * 86_400_000),
       },
     });
   }
@@ -188,7 +246,7 @@ async function main() {
         workspaceId: workspace.id,
         name: key.name,
         // Seed data only — a real key is hashed with Argon2id at creation and
-        // never recoverable.
+        // is never recoverable.
         hashedKey: `seed$${key.id}`,
         keyPrefix: key.masked.startsWith("klip_test") ? "klip_test" : "klip_live",
         last4: key.masked.slice(-4),
@@ -211,39 +269,70 @@ async function main() {
     },
   });
 
-  // Click events spread over the last 30 days. Seeded PRNG so re-running
-  // produces the same distribution.
-  const existingClicks = await db.linkClick.count({
-    where: { workspaceId: workspace.id },
-  });
-  if (existingClicks === 0) {
+  // --- Click events ------------------------------------------------------
+  // Generated proportionally to each link's designed click count, so the links
+  // table, the charts and the breakdowns all describe the same traffic.
+  const existing = await db.linkClick.count({ where: { workspaceId: workspace.id } });
+  if (existing === 0) {
     const next = rnd(30);
-    const allLinks = await db.link.findMany({
-      where: { workspaceId: workspace.id },
-      select: { id: true },
-    });
     const now = Date.now();
-    const rows = Array.from({ length: 2000 }, () => {
-      const link = allLinks[Math.floor(next() * allLinks.length)];
-      const daysAgo = next() * 30;
-      return {
-        linkId: link.id,
-        workspaceId: workspace.id,
-        timestamp: new Date(now - daysAgo * 24 * 60 * 60 * 1000),
-        ipHash: `h_${Math.floor(next() * 1e9).toString(36)}`,
-        country: COUNTRIES[Math.floor(next() * COUNTRIES.length)],
-        city: null,
-        referrer: REFERRERS[Math.floor(next() * REFERRERS.length)],
-        deviceType: DEVICES[Math.floor(next() * DEVICES.length)],
-        browser: BROWSERS[Math.floor(next() * BROWSERS.length)],
-        os: OSES[Math.floor(next() * OSES.length)],
-        isBot: next() > 0.96,
-      };
+
+    const targets = [
+      ...mockLinks.map((l) => ({ id: l.id, clicks: l.clicks })),
+      ...EXTRA_LINKS.map((l) => ({ id: l.id, clicks: l.clicks })),
+    ];
+
+    for (const target of targets) {
+      const visitors = Math.max(1, Math.round(target.clicks * VISITOR_POOL));
+      const rows = Array.from({ length: target.clicks }, () => {
+        // Newer links skew their traffic toward the recent end of the window.
+        const daysAgo = Math.pow(next(), 1.4) * 30;
+        return {
+          linkId: target.id,
+          workspaceId: workspace.id,
+          timestamp: new Date(now - daysAgo * 86_400_000),
+          // Drawing from a pool smaller than the click count is what makes
+          // unique visitors land below total clicks.
+          ipHash: `h_${Math.floor(next() * visitors).toString(36)}_${target.id}`,
+          country: weighted(COUNTRIES, next()),
+          city: null,
+          referrer: weighted(REFERRERS, next()),
+          deviceType: weighted(DEVICES, next()),
+          browser: weighted(BROWSERS, next()),
+          os: weighted(OSES, next()),
+          viaQr: next() < 0.18,
+          isBot: next() > 0.97,
+        };
+      });
+
+      // Chunked: a single createMany with 12k rows exceeds the parameter limit.
+      for (let i = 0; i < rows.length; i += 2000) {
+        await db.linkClick.createMany({ data: rows.slice(i, i + 2000) });
+      }
+    }
+
+    // Derive the denormalized counter from what was actually written.
+    const grouped = await db.linkClick.groupBy({
+      by: ["linkId"],
+      where: { workspaceId: workspace.id, isBot: false },
+      _count: { _all: true },
     });
-    await db.linkClick.createMany({ data: rows });
+    for (const row of grouped) {
+      await db.link.update({
+        where: { id: row.linkId },
+        data: { clickCount: row._count._all },
+      });
+    }
   }
 
-  const counts = {
+  const clicks = await db.linkClick.count({ where: { workspaceId: workspace.id, isBot: false } });
+  const uniques = await db.linkClick.findMany({
+    where: { workspaceId: workspace.id, isBot: false },
+    distinct: ["ipHash"],
+    select: { ipHash: true },
+  });
+
+  console.log("Seeded:", {
     workspaces: await db.workspace.count(),
     domains: await db.customDomain.count(),
     projects: await db.project.count(),
@@ -251,9 +340,10 @@ async function main() {
     links: await db.link.count(),
     qrCodes: await db.qrCode.count(),
     apiKeys: await db.apiKey.count(),
-    clicks: await db.linkClick.count(),
-  };
-  console.log("Seeded:", counts);
+    clicks,
+    uniqueVisitors: uniques.length,
+    uniqueRatio: `${Math.round((uniques.length / clicks) * 100)}%`,
+  });
 }
 
 main()

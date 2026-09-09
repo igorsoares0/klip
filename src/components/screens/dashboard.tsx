@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
@@ -9,42 +10,69 @@ import { SegmentedControl } from "@/components/ui/segmented";
 import { BarChart, ChartLegend } from "@/components/ui/bar-chart";
 import { BreakdownRow } from "@/components/ui/breakdown";
 import { ArrowRight } from "@/components/icons";
-import {
-  breakdownTabs,
-  breakdowns,
-  buildSeries,
-  dashboardStats,
-  fastestGrowing,
-  rangeLabel,
-  ranges,
-  topLinks,
-  type BreakdownTab,
-} from "@/lib/mock/analytics";
-import type { TimeRange } from "@/lib/types";
+import { RANGES, rangeLabel } from "@/analytics/range";
+import type {
+  BreakdownItem,
+  SeriesPoint,
+  Stat,
+  TimeRange,
+  TopLink,
+} from "@/lib/types";
 
-const AXIS = ["Aug 10", "Aug 17", "Aug 24", "Aug 31", "Sep 07"];
+export type BreakdownTab = "countries" | "referrers" | "devices";
 
-export function DashboardScreen() {
-  const [range, setRange] = useState<TimeRange>("30d");
+const TABS: Array<{ id: BreakdownTab; label: string }> = [
+  { id: "countries", label: "Countries" },
+  { id: "referrers", label: "Referrers" },
+  { id: "devices", label: "Devices" },
+];
+
+export interface DashboardData {
+  range: TimeRange;
+  stats: Stat[];
+  series: SeriesPoint[];
+  axis: string[];
+  topLinks: TopLink[];
+  breakdowns: Record<BreakdownTab, BreakdownItem[]>;
+  fastestGrowing: {
+    slug: string;
+    clicks: string;
+    delta: string;
+    note: string;
+  } | null;
+  activeLinks: number;
+}
+
+export function DashboardScreen({ data }: { data: DashboardData }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  // Only the breakdown tab stays client-side: all three sets already arrived,
+  // so switching costs nothing. The range drives every query, so it lives in
+  // the URL and re-runs them on the server.
   const [tab, setTab] = useState<BreakdownTab>("countries");
-  const series = useMemo(() => buildSeries(range), [range]);
+
+  function setRange(range: TimeRange) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("range", range);
+    router.push(`/dashboard?${params.toString()}`);
+  }
 
   return (
     <div className="mx-auto max-w-content animate-klip-in">
       <PageHeader
         title="Overview"
-        sub="Everything happening across 248 active links."
+        sub={`Everything happening across ${data.activeLinks} active links.`}
         action={
           <SegmentedControl
-            options={ranges}
-            value={range}
+            options={RANGES}
+            value={data.range}
             onChange={setRange}
           />
         }
       />
 
       <div className="grid gap-[14px] [grid-template-columns:repeat(auto-fit,minmax(200px,1fr))]">
-        {dashboardStats.map((stat) => (
+        {data.stats.map((stat) => (
           <StatCard key={stat.label} stat={stat} />
         ))}
       </div>
@@ -56,7 +84,7 @@ export function DashboardScreen() {
               Clicks over time
             </h2>
             <p className="mt-1 text-meta text-muted">
-              {rangeLabel(range)} · hover a bar for detail
+              {rangeLabel(data.range)} · hover a bar for detail
             </p>
           </div>
           <ChartLegend
@@ -67,7 +95,7 @@ export function DashboardScreen() {
           />
         </div>
         <div className="mt-5">
-          <BarChart series={series} axis={AXIS} />
+          <BarChart series={data.series} axis={data.axis} />
         </div>
       </Card>
 
@@ -83,10 +111,10 @@ export function DashboardScreen() {
             </Link>
           </div>
           <div className="mt-3 flex flex-col">
-            {topLinks.map((link) => (
+            {data.topLinks.map((link) => (
               <Link
                 key={link.slug}
-                href="/dashboard/links/link_summer_sale"
+                href="/dashboard/links"
                 className="-mx-5 flex items-center gap-3 px-5 py-[9px] transition-colors hover:bg-surface-hover"
               >
                 <span className="min-w-0 flex-1">
@@ -116,33 +144,37 @@ export function DashboardScreen() {
           <div className="mt-3">
             <SegmentedControl
               variant="raised"
-              options={breakdownTabs}
+              options={TABS}
               value={tab}
               onChange={setTab}
             />
           </div>
           <div className="mt-4 flex flex-col gap-[14px]">
-            {breakdowns[tab].map((item) => (
+            {data.breakdowns[tab].map((item) => (
               <BreakdownRow key={item.label} item={item} />
             ))}
           </div>
         </Card>
 
-        <Card className="border-transparent bg-ink px-5 pb-5 pt-4">
-          <h2 className="text-card-title font-semibold text-white">
-            Fastest growing
-          </h2>
-          <p className="mt-5 font-mono text-body text-lime">
-            {fastestGrowing.slug}
-          </p>
-          <p className="mt-2 font-mono text-metric font-bold tracking-tighter text-white">
-            {fastestGrowing.clicks}
-          </p>
-          <p className="mt-2 text-cell font-semibold text-lime">
-            {fastestGrowing.delta}
-          </p>
-          <p className="mt-3 text-caption text-white/60">{fastestGrowing.note}</p>
-        </Card>
+        {data.fastestGrowing ? (
+          <Card className="border-transparent bg-ink px-5 pb-5 pt-4">
+            <h2 className="text-card-title font-semibold text-white">
+              Fastest growing
+            </h2>
+            <p className="mt-5 font-mono text-body text-lime">
+              {data.fastestGrowing.slug}
+            </p>
+            <p className="mt-2 font-mono text-metric font-bold tracking-tighter text-white">
+              {data.fastestGrowing.clicks}
+            </p>
+            <p className="mt-2 text-cell font-semibold text-lime">
+              {data.fastestGrowing.delta}
+            </p>
+            <p className="mt-3 text-caption text-white/60">
+              {data.fastestGrowing.note}
+            </p>
+          </Card>
+        ) : null}
       </div>
     </div>
   );

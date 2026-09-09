@@ -5,12 +5,20 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Toggle } from "@/components/ui/form";
-import { domains } from "@/lib/mock/domains";
-import { privacyToggles, workspace } from "@/lib/mock/workspace";
 
-export function SettingsScreen() {
+export interface SettingsData {
+  name: string;
+  slug: string;
+  defaultDomainId: string | null;
+  toggles: Array<{ id: string; label: string; description: string; enabled: boolean }>;
+  domains: Array<{ id: string; host: string }>;
+}
+
+export function SettingsScreen({ data }: { data: SettingsData }) {
+  const { domains, toggles: initialToggles } = data;
+  // Local only — persisting these is part of the mutations step.
   const [toggles, setToggles] = useState(() =>
-    Object.fromEntries(privacyToggles.map((t) => [t.id, t.enabled])),
+    Object.fromEntries(initialToggles.map((t) => [t.id, t.enabled])),
   );
 
   return (
@@ -21,15 +29,15 @@ export function SettingsScreen() {
         <h2 className="text-card-title font-semibold text-ink">Workspace</h2>
         <div className="mt-4 flex flex-col gap-[18px]">
           <Field label="Name">
-            <Input defaultValue={workspace.name} className="h-10" />
+            <Input defaultValue={data.name} className="h-10" />
           </Field>
           <Field label="Slug">
-            <Input mono defaultValue={workspace.slug} className="h-10" />
+            <Input mono defaultValue={data.slug} className="h-10" />
           </Field>
           <Field label="Default short domain">
-            <Select defaultValue={workspace.defaultDomain} className="h-10">
+            <Select defaultValue={data.defaultDomainId ?? ""} className="h-10">
               {domains.map((domain) => (
-                <option key={domain.id} value={domain.host}>
+                <option key={domain.id} value={domain.id}>
                   {domain.host}
                 </option>
               ))}
@@ -43,7 +51,7 @@ export function SettingsScreen() {
           Privacy &amp; tracking
         </h2>
         <div className="mt-4 flex flex-col">
-          {privacyToggles.map((toggle) => (
+          {initialToggles.map((toggle) => (
             <div
               key={toggle.id}
               className="flex items-center gap-4 border-b border-divider py-[13px] last:border-b-0"
