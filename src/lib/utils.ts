@@ -20,7 +20,9 @@ export const RESERVED_SLUGS = [
 /** Stand-in for the debounced server availability check. */
 export const TAKEN_SLUGS = ["ig-bio", "newsletter", "creator-drop"];
 
-const DESTINATION_RE = /^https?:\/\/[^\s.]+\.[^\s]{2,}$/;
+// Handoff rule: ^https?://[^\s.]+\.[^\s]{2,} — case-insensitive so a pasted
+// "HTTPS://…" is accepted. The trailing anchor rejects embedded whitespace.
+const DESTINATION_RE = /^https?:\/\/[^\s.]+\.[^\s]{2,}$/i;
 const SLUG_RE = /^[a-z0-9-]+$/;
 
 /** Slug inputs normalize as you type: lowercased, whitespace to hyphens. */
