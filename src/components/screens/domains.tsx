@@ -3,9 +3,28 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DomainStatusBadge } from "@/components/ui/badge";
 import { PlusIcon } from "@/components/icons";
-import { domains, verification } from "@/lib/mock/domains";
+import type { DomainStatus } from "@/lib/types";
 
-export function DomainsScreen() {
+export interface DomainRow {
+  id: string;
+  host: string;
+  note: string | null;
+  links: number;
+  status: DomainStatus;
+}
+
+export interface VerificationTarget {
+  host: string;
+  record: Array<{ key: string; value: string }>;
+}
+
+export function DomainsScreen({
+  domains,
+  verification,
+}: {
+  domains: DomainRow[];
+  verification: VerificationTarget | null;
+}) {
   return (
     <div className="mx-auto max-w-domains animate-klip-in">
       <PageHeader
@@ -28,7 +47,9 @@ export function DomainsScreen() {
               <p className="truncate font-mono text-body font-medium text-ink">
                 {domain.host}
               </p>
-              <p className="mt-1 truncate text-meta text-muted">{domain.note}</p>
+              {domain.note ? (
+                <p className="mt-1 truncate text-meta text-muted">{domain.note}</p>
+              ) : null}
             </div>
             <span className="font-mono text-cell text-muted whitespace-nowrap">
               {domain.links} links
@@ -38,41 +59,43 @@ export function DomainsScreen() {
         ))}
       </Card>
 
-      <Card className="mt-[18px] px-5 pb-5 pt-4">
-        <h2 className="text-card-title font-semibold text-ink">
-          Verify <span className="font-mono">{verification.host}</span>
-        </h2>
-        <p className="mt-1 text-meta text-muted">
-          Add this record at your DNS provider. Verification usually completes
-          within a few minutes.
-        </p>
+      {verification ? (
+        <Card className="mt-[18px] px-5 pb-5 pt-4">
+          <h2 className="text-card-title font-semibold text-ink">
+            Verify <span className="font-mono">{verification.host}</span>
+          </h2>
+          <p className="mt-1 text-meta text-muted">
+            Add this record at your DNS provider. Verification usually completes
+            within a few minutes.
+          </p>
 
-        <div className="mt-4 rounded-block bg-ink px-4 py-[14px]">
-          <div className="grid gap-y-2 [grid-template-columns:70px_1fr]">
-            {verification.record.map((row) => (
-              <div key={row.key} className="contents">
-                <span className="font-mono text-[11.5px] text-white/45">
-                  {row.key}
-                </span>
-                <span
-                  className={
-                    row.key === "VALUE"
-                      ? "font-mono text-cell text-lime"
-                      : "font-mono text-cell text-white"
-                  }
-                >
-                  {row.value}
-                </span>
-              </div>
-            ))}
+          <div className="mt-4 rounded-block bg-ink px-4 py-[14px]">
+            <div className="grid gap-y-2 [grid-template-columns:70px_1fr]">
+              {verification.record.map((row) => (
+                <div key={row.key} className="contents">
+                  <span className="font-mono text-[11.5px] text-white/45">
+                    {row.key}
+                  </span>
+                  <span
+                    className={
+                      row.key === "VALUE"
+                        ? "font-mono text-cell text-lime"
+                        : "font-mono text-cell text-white"
+                    }
+                  >
+                    {row.value}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
 
-        <div className="mt-4 flex items-center gap-2">
-          <Button variant="primary">Check DNS</Button>
-          <Button>Copy record</Button>
-        </div>
-      </Card>
+          <div className="mt-4 flex items-center gap-2">
+            <Button variant="primary">Check DNS</Button>
+            <Button>Copy record</Button>
+          </div>
+        </Card>
+      ) : null}
     </div>
   );
 }

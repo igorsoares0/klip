@@ -1,0 +1,397 @@
+// Klip — link management & analytics
+//
+// Field lists follow docs/link-management-saas-spec.md §8. Where the spec left a
+// gap, the deviation is commented inline.
+//
+// Prisma 7: the datasource carries no `url` — the connection string lives in
+// prisma.config.ts. The client is generated into the source tree so Turbopack
+// can resolve it.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Auth.js
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+
+  /// Argon2id or bcrypt — never plaintext (spec §3). Null for OAuth-only users.
+  passwordHash String?
+
+  accounts   Account[]
+  sessions   Session[]
+  memberships WorkspaceMember[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ---------------------------------------------------------------------------
+// Tenancy
+// ---------------------------------------------------------------------------
+
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+model Workspace {
+  id   String @id @default(cuid())
+  name String
+  slug String @unique
+
+  /// Privacy toggles surfaced on the Settings screen.
+  hashVisitorIps   Boolean @default(true)
+  storeCityGeo     Boolean @default(true)
+  respectDoNotTrack Boolean @default(false)
+
+  /// Which domain new links default to.
+  defaultDomainId String?
+  defaultDomain   CustomDomain? @relation("WorkspaceDefaultDomain", fields: [defaultDomainId], references: [id], onDelete: SetNull)
+
+  members     WorkspaceMember[]
+  domains     CustomDomain[]    @relation("WorkspaceDomains")
+  projects    Project[]
+  folders     Folder[]
+  links       Link[]
+  clicks      LinkClick[]
+  qrCodes     QrCode[]
+  apiKeys     ApiKey[]
+  entitlement Entitlement?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([defaultDomainId])
+}
+
+model WorkspaceMember {
+  id          String        @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        WorkspaceRole @default(OWNER)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Domains
+// ---------------------------------------------------------------------------
+
+enum DomainStatus {
+  ACTIVE
+  PENDING_DNS
+  ERROR
+}
+
+model CustomDomain {
+  id   String @id @default(cuid())
+  host String @unique
+
+  /// Null for the shared system domain (klip.to), which belongs to no workspace.
+  workspaceId String?
+  workspace   Workspace? @relation("WorkspaceDomains", fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  status            DomainStatus @default(PENDING_DNS)
+  verificationToken String?
+  verifiedAt        DateTime?
+  note              String?
+
+  links             Link[]
+  defaultForWorkspaces Workspace[] @relation("WorkspaceDefaultDomain")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId])
+}
+
+// ---------------------------------------------------------------------------
+// Organization
+// ---------------------------------------------------------------------------
+
+model Project {
+  id          String  @id @default(cuid())
+  workspaceId String
+  name        String
+  description String?
+
+  /// 1–6, indexing the accent dots in the design tokens.
+  color Int @default(1)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  folders   Folder[]
+  links     Link[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId])
+}
+
+model Folder {
+  id          String  @id @default(cuid())
+  workspaceId String
+  projectId   String?
+  name        String
+
+  /// The projects screen renders folders two levels deep; the spec's flat
+  /// Folder has no way to express that nesting.
+  parentId String?
+  parent   Folder?  @relation("FolderTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children Folder[] @relation("FolderTree")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project   Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  links     Link[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId])
+  @@index([projectId])
+  @@index([parentId])
+}
+
+// ---------------------------------------------------------------------------
+// Links
+// ---------------------------------------------------------------------------
+
+enum LinkStatus {
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+model Link {
+  id          String  @id @default(cuid())
+  workspaceId String
+  projectId   String?
+  folderId    String?
+
+  /// The spec lists no domain FK, yet requires slugs to be unique "within their
+  /// domain context" (§8) and resolves by hostname + slug (§16). Without this
+  /// column that rule cannot be expressed.
+  domainId String
+
+  slug           String
+  destinationUrl String
+
+  title       String?
+  description String?
+  ogImage     String?
+
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  utmTerm     String?
+  utmContent  String?
+
+  status LinkStatus @default(ACTIVE)
+
+  /// Denormalized counter incremented on redirect. Keeps the links table and
+  /// its "sort by clicks" O(1) instead of aggregating link_clicks per row.
+  clickCount Int @default(0)
+
+  workspace Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project   Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  folder    Folder?      @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  domain    CustomDomain @relation(fields: [domainId], references: [id], onDelete: Restrict)
+  clicks    LinkClick[]
+  qrCode    QrCode?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// The resolver's lookup key.
+  @@unique([domainId, slug])
+  @@index([workspaceId, status])
+  @@index([workspaceId, clickCount])
+  @@index([projectId])
+  @@index([folderId])
+}
+
+enum DeviceType {
+  DESKTOP
+  MOBILE
+  TABLET
+  UNKNOWN
+}
+
+model LinkClick {
+  id     String @id @default(cuid())
+  linkId String
+
+  /// Spec §5: every customer-owned resource carries workspaceId. Denormalizing
+  /// it here is what keeps workspace-wide analytics from joining through Link.
+  workspaceId String
+
+  timestamp DateTime @default(now())
+
+  /// Raw IPs are never stored — hashed, then discarded after geo lookup (§10).
+  ipHash String?
+
+  country String?
+  region  String?
+  city    String?
+
+  referrer String?
+
+  deviceType     DeviceType @default(UNKNOWN)
+  browser        String?
+  browserVersion String?
+  os             String?
+  userAgent      String?
+
+  /// Not in the spec, which describes no bot filtering at all — a real gap for a
+  /// click-analytics product, since link unfurlers inflate counts. Detection
+  /// lands with the resolver; the column exists so it can be excluded later.
+  isBot Boolean @default(false)
+
+  link      Link      @relation(fields: [linkId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([linkId, timestamp])
+  @@index([workspaceId, timestamp])
+}
+
+model QrCode {
+  id          String @id @default(cuid())
+  workspaceId String
+  linkId      String @unique
+
+  scans Int @default(0)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  link      Link      @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId])
+}
+
+// ---------------------------------------------------------------------------
+// API & billing
+// ---------------------------------------------------------------------------
+
+enum ApiKeyScope {
+  FULL
+  LINKS
+  READ
+}
+
+model ApiKey {
+  id          String @id @default(cuid())
+  workspaceId String
+  name        String
+
+  /// Only the hash is stored — the key is shown once at creation (§17).
+  hashedKey String @unique
+
+  /// Enough to render "klip_live_••••••••••••4f2a" without holding the secret.
+  keyPrefix String
+  last4     String
+
+  scope      ApiKeyScope @default(READ)
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId])
+}
+
+enum EntitlementPlan {
+  FREE
+  LIFETIME
+}
+
+enum EntitlementStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Entitlement {
+  id          String @id @default(cuid())
+  workspaceId String @unique
+
+  plan   EntitlementPlan   @default(FREE)
+  status EntitlementStatus @default(INACTIVE)
+
+  paddleCustomerId    String?
+  paddleTransactionId String?
+  /// Nullable so recurring plans stay possible alongside the LTD (§18).
+  paddleSubscriptionId String?
+
+  /// Null for LIFETIME.
+  expiresAt DateTime?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
