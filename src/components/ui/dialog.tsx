@@ -29,8 +29,12 @@ export function Dialog({
       if (event.key === "Escape") onClose();
     }
     document.addEventListener("keydown", onKeyDown);
-    // Move focus into the dialog so keyboard users land on its actions.
-    panel.current?.querySelector<HTMLElement>("button")?.focus();
+    // Move focus into the dialog: the first field if it has one, so typing can
+    // start at once; otherwise the first action, which in a confirmation is
+    // Cancel — the safe default for a destructive prompt.
+    panel.current
+      ?.querySelector<HTMLElement>("input, textarea, select, button")
+      ?.focus();
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [open, onClose]);
 

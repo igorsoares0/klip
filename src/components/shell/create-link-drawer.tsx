@@ -44,7 +44,8 @@ const EMPTY_UTM: Utm = {
 
 export interface DrawerOptions {
   projects: Array<{ id: string; name: string }>;
-  folders: Array<{ id: string; name: string }>;
+  /** In tree order, each carrying its project so the list can be narrowed. */
+  folders: Array<{ id: string; name: string; projectId: string | null; parentId: string | null }>;
   domains: Array<{ id: string; host: string }>;
 }
 
@@ -75,6 +76,13 @@ export function CreateLinkDrawer({
   const [title, setTitle] = useState(editing?.title ?? "");
   const [domainId, setDomainId] = useState(options.domains[0]?.id ?? "");
   const [utm, setUtm] = useState<Utm>(editing?.utm ?? EMPTY_UTM);
+  const [projectId, setProjectId] = useState(editing?.projectId ?? "");
+  const [folderId, setFolderId] = useState(editing?.folderId ?? "");
+  // A folder belongs to one project, so only that project's folders are offered.
+  // The server enforces the same rule: the folder decides the project.
+  const folderChoices = options.folders.filter(
+    (folder) => projectId && folder.projectId === projectId,
+  );
   const [utmOpen, setUtmOpen] = useState(true);
   const [touched, setTouched] = useState<{ destination?: boolean; slug?: boolean }>({});
   // The verdict is stored with the slug it answered for. Deriving from that
@@ -393,7 +401,12 @@ export function CreateLinkDrawer({
               <Select
                 name="projectId"
                 className="h-[38px]"
-                defaultValue={editing?.projectId ?? ""}
+                value={projectId}
+                onChange={(event) => {
+                  setProjectId(event.target.value);
+                  // A folder from the previous project no longer applies.
+                  setFolderId("");
+                }}
               >
                 <option value="">No project</option>
                 {options.projects.map((project) => (
@@ -406,13 +419,22 @@ export function CreateLinkDrawer({
             <Field label="Folder">
               <Select
                 name="folderId"
-                className="h-[38px]"
-                defaultValue={editing?.folderId ?? ""}
+                className="h-[38px] disabled:cursor-not-allowed disabled:bg-surface-sunken disabled:text-muted"
+                value={folderId}
+                onChange={(event) => setFolderId(event.target.value)}
+                disabled={!projectId || folderChoices.length === 0}
               >
-                <option value="">No folder</option>
-                {options.folders.map((folder) => (
+                <option value="">
+                  {!projectId
+                    ? "Pick a project first"
+                    : folderChoices.length === 0
+                      ? "No folders in this project"
+                      : "No folder"}
+                </option>
+                {folderChoices.map((folder) => (
                   <option key={folder.id} value={folder.id}>
-                    {folder.name}
+                    {/* Subfolders are indented under their parent. */}
+                    {folder.parentId ? `\u00a0\u00a0\u00a0${folder.name}` : folder.name}
                   </option>
                 ))}
               </Select>

@@ -66,6 +66,36 @@ export async function checkSlugAvailability(
     : { available: true, message: null };
 }
 
+/**
+ * Where a link lives. The folder wins: if one is chosen, the link's project is
+ * that folder's project. The drawer offers the two lists separately, and before
+ * this rule a link could be saved in project A inside a folder of project C.
+ */
+async function resolvePlacement(
+  workspaceId: string,
+  projectId: string | null,
+  folderId: string | null,
+): Promise<{ projectId: string | null; folderId: string | null } | { error: string }> {
+  if (folderId) {
+    const folder = await db.folder.findFirst({
+      where: { id: folderId, workspaceId },
+      select: { id: true, projectId: true },
+    });
+    if (!folder) return { error: "Pick a folder from this workspace." };
+    return { projectId: folder.projectId, folderId: folder.id };
+  }
+
+  if (projectId) {
+    const project = await db.project.findFirst({
+      where: { id: projectId, workspaceId },
+      select: { id: true },
+    });
+    if (!project) return { error: "Pick a project from this workspace." };
+  }
+
+  return { projectId, folderId: null };
+}
+
 export interface CreatedLink {
   id: string;
   slug: string;
@@ -94,26 +124,13 @@ export async function createLink(
   const domain = await resolveDomain(workspaceId, domainId);
   if (!domain) return fail("Pick a domain you own.", "form");
 
-  // Project and folder must belong to the same workspace, or they are not the
-  // caller's to file a link under.
-  const projectId = optionalText(form, "projectId");
-  const folderId = optionalText(form, "folderId");
-
-  if (projectId) {
-    const project = await db.project.findFirst({
-      where: { id: projectId, workspaceId },
-      select: { id: true },
-    });
-    if (!project) return fail("Pick a project from this workspace.", "form");
-  }
-
-  if (folderId) {
-    const folder = await db.folder.findFirst({
-      where: { id: folderId, workspaceId },
-      select: { id: true },
-    });
-    if (!folder) return fail("Pick a folder from this workspace.", "form");
-  }
+  const placement = await resolvePlacement(
+    workspaceId,
+    optionalText(form, "projectId"),
+    optionalText(form, "folderId"),
+  );
+  if ("error" in placement) return fail(placement.error, "form");
+  const { projectId, folderId } = placement;
 
   const withQr = checkbox(form, "generateQr");
 
@@ -177,23 +194,13 @@ export async function updateLink(
   const destinationError = validateDestination(destination);
   if (destinationError) return fail(destinationError, "destination");
 
-  const projectId = optionalText(form, "projectId");
-  const folderId = optionalText(form, "folderId");
-
-  if (projectId) {
-    const project = await db.project.findFirst({
-      where: { id: projectId, workspaceId },
-      select: { id: true },
-    });
-    if (!project) return fail("Pick a project from this workspace.", "form");
-  }
-  if (folderId) {
-    const folder = await db.folder.findFirst({
-      where: { id: folderId, workspaceId },
-      select: { id: true },
-    });
-    if (!folder) return fail("Pick a folder from this workspace.", "form");
-  }
+  const placement = await resolvePlacement(
+    workspaceId,
+    optionalText(form, "projectId"),
+    optionalText(form, "folderId"),
+  );
+  if ("error" in placement) return fail(placement.error, "form");
+  const { projectId, folderId } = placement;
 
   // Scoped by workspace and live-ness in the where clause: another tenant's id,
   // or a deleted link, simply does not match.

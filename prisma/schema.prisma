@@ -233,7 +233,10 @@ model Folder {
   children Folder[] @relation("FolderTree")
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  project   Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  /// Cascade: a folder only means something inside its project. SetNull would
+  /// leave orphans — projectless, invisible in the tree, still in the table.
+  /// Links inside keep living; their own folderId/projectId are SetNull.
+  project   Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   links     Link[]
 
   createdAt DateTime @default(now())
