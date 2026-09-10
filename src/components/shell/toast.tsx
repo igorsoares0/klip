@@ -3,7 +3,6 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { CheckIcon } from "@/components/icons";
-import { DEFAULT_DOMAIN } from "@/lib/utils";
 import type { ToastState } from "./app-shell-context";
 
 const AUTO_DISMISS_MS = 4500;
@@ -22,7 +21,7 @@ export function Toast({
     return () => clearTimeout(timer);
   }, [toast, onDismiss]);
 
-  const shortUrl = `${DEFAULT_DOMAIN}/${toast.slug}`;
+  const shortUrl = `${toast.host}/${toast.slug}`;
 
   return (
     <div
@@ -45,7 +44,7 @@ export function Toast({
         type="button"
         onClick={() => {
           onDismiss();
-          router.push("/dashboard/links/link_summer_sale");
+          router.push(`/dashboard/links/${toast.id}`);
         }}
         className="cursor-pointer rounded-pill bg-white/10 px-3 py-[5px] text-meta font-semibold text-white transition-colors hover:bg-white/20"
       >

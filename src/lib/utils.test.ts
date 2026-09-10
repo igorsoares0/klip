@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  DEFAULT_DOMAIN,
   RESERVED_SLUGS,
-  TAKEN_SLUGS,
   buildFinalUrl,
   cn,
   normalizeSlug,
@@ -99,9 +97,19 @@ describe("validateSlug", () => {
     expect(validateSlug(slug)).toBe("That path is reserved by Klip.");
   });
 
-  it.each(TAKEN_SLUGS)("reports %s as taken and suggests a fallback", (slug) => {
-    expect(validateSlug(slug)).toBe(
-      `${DEFAULT_DOMAIN}/${slug} is already in use — try ${slug}-2.`,
+  it("says nothing about whether a slug is already taken", () => {
+    // That is a database question — see checkSlugAvailability in
+    // src/links/actions.ts. This function stays pure.
+    expect(validateSlug("summer-sale")).toBeNull();
+  });
+
+  it("rejects a slug with no letter or number", () => {
+    // normalizeSlug maps whitespace to hyphens, so this is what a spaces-only
+    // input actually becomes.
+    expect(validateSlug("-")).toBe("Use at least one letter or number.");
+    expect(validateSlug("---")).toBe("Use at least one letter or number.");
+    expect(validateSlug(normalizeSlug("   "))).toBe(
+      "Use at least one letter or number.",
     );
   });
 

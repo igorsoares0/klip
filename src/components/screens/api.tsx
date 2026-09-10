@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import { PlusIcon } from "@/components/icons";
 import { endpoints, quickStartCurl } from "@/api-keys/docs";
 import { cn } from "@/lib/utils";
 import type { ApiKeyRow } from "@/api-keys/queries";
+import { createApiKey, revokeApiKey } from "@/api-keys/actions";
 
 const TONE: Record<string, string> = {
   positive: "text-positive",
@@ -18,7 +20,34 @@ const TONE: Record<string, string> = {
 };
 
 export function ApiScreen({ apiKeys }: { apiKeys: ApiKeyRow[] }) {
+  // Held in memory only, and only until the next navigation: this is the one
+  // moment the plaintext key exists outside the creating request.
   const [newKey, setNewKey] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+  const router = useRouter();
+
+  function create() {
+    setError(null);
+    startTransition(async () => {
+      const result = await createApiKey();
+      if (result.ok) {
+        setNewKey(result.data.plaintext);
+        router.refresh();
+      } else {
+        setError(result.error);
+      }
+    });
+  }
+
+  function revoke(id: string) {
+    setError(null);
+    startTransition(async () => {
+      const result = await revokeApiKey(id);
+      if (result.ok) router.refresh();
+      else setError(result.error);
+    });
+  }
 
   return (
     <div className="mx-auto max-w-content animate-klip-in">
@@ -29,20 +58,19 @@ export function ApiScreen({ apiKeys }: { apiKeys: ApiKeyRow[] }) {
           <Button
             variant="primary"
             icon={<PlusIcon size={15} />}
-            onClick={() =>
-              // Display only. The real endpoint returns the key once and stores
-              // nothing but a hash.
-              setNewKey(
-                `klip_live_${Math.random().toString(36).slice(2, 12)}${Math.random()
-                  .toString(36)
-                  .slice(2, 12)}`,
-              )
-            }
+            onClick={create}
+            disabled={pending}
           >
             Create API key
           </Button>
         }
       />
+
+      {error ? (
+        <Card className="mb-[14px] border-border-danger px-5 py-4">
+          <p className="text-cell text-danger">{error}</p>
+        </Card>
+      ) : null}
 
       {newKey ? (
         <Card className="mb-[14px] border-accent px-5 pb-5 pt-4 shadow-reveal">
@@ -88,7 +116,9 @@ export function ApiScreen({ apiKeys }: { apiKeys: ApiKeyRow[] }) {
             <ScopeBadge scope={key.scope} />
             <button
               type="button"
-              className="cursor-pointer rounded-chip px-[9px] py-[5px] text-meta font-semibold text-danger transition-colors hover:bg-danger-bg"
+              onClick={() => revoke(key.id)}
+              disabled={pending}
+              className="cursor-pointer rounded-chip px-[9px] py-[5px] text-meta font-semibold text-danger transition-colors hover:bg-danger-bg disabled:cursor-not-allowed disabled:text-disabled-fg"
             >
               Revoke
             </button>

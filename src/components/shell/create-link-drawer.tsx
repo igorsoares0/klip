@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useState, useTransition } from "react";
 import { CloseIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,28 +13,29 @@ import {
 } from "@/components/ui/form";
 import type { Utm } from "@/lib/types";
 import {
-  DEFAULT_DOMAIN,
   buildFinalUrl,
   normalizeSlug,
   randomSlug,
   validateDestination,
   validateSlug,
 } from "@/lib/utils";
+import { checkSlugAvailability, createLink } from "@/links/actions";
+import type { CreatedLink } from "@/links/actions";
 
-const UTM_FIELDS: Array<{ label: string; key: keyof Utm; placeholder: string; wide?: boolean }> = [
-  { label: "Source", key: "source", placeholder: "instagram" },
-  { label: "Medium", key: "medium", placeholder: "social" },
-  { label: "Campaign", key: "campaign", placeholder: "summer-sale", wide: true },
-  { label: "Term", key: "term", placeholder: "optional" },
-  { label: "Content", key: "content", placeholder: "video-01" },
+const UTM_FIELDS: Array<{ label: string; key: keyof Utm; name: string; placeholder: string; wide?: boolean }> = [
+  { label: "Source", key: "source", name: "utmSource", placeholder: "instagram" },
+  { label: "Medium", key: "medium", name: "utmMedium", placeholder: "social" },
+  { label: "Campaign", key: "campaign", name: "utmCampaign", placeholder: "summer-sale", wide: true },
+  { label: "Term", key: "term", name: "utmTerm", placeholder: "optional" },
+  { label: "Content", key: "content", name: "utmContent", placeholder: "video-01" },
 ];
 
 const EMPTY_UTM: Utm = {
-  source: "instagram",
-  medium: "social",
-  campaign: "summer-sale",
+  source: "",
+  medium: "",
+  campaign: "",
   term: "",
-  content: "video-01",
+  content: "",
 };
 
 export interface DrawerOptions {
@@ -51,15 +52,29 @@ export function CreateLinkDrawer({
 }: {
   open: boolean;
   onClose: () => void;
-  onCreated: (slug: string) => void;
+  onCreated: (link: CreatedLink) => void;
   options: DrawerOptions;
 }) {
-  const [destination, setDestination] = useState("https://example.com/product");
-  const [slug, setSlug] = useState("summer-sale");
+  const [destination, setDestination] = useState("");
+  const [slug, setSlug] = useState("");
   const [title, setTitle] = useState("");
+  const [domainId, setDomainId] = useState(options.domains[0]?.id ?? "");
   const [utm, setUtm] = useState<Utm>(EMPTY_UTM);
   const [utmOpen, setUtmOpen] = useState(true);
   const [touched, setTouched] = useState<{ destination?: boolean; slug?: boolean }>({});
+  // The verdict is stored with the slug it answered for. Deriving from that
+  // key means a late reply for an older slug is ignored by construction —
+  // no reset, no sequence counter.
+  const [checked, setChecked] = useState<{
+    slug: string;
+    domainId: string;
+    available: boolean;
+    message: string | null;
+  } | null>(null);
+  const [serverError, setServerError] = useState<{ slug: string; message: string } | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
   const destinationId = useId();
   const slugId = useId();
 
@@ -73,17 +88,85 @@ export function CreateLinkDrawer({
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [open, onClose]);
 
+  const formatError = validateSlug(slug);
+  const trimmedSlug = slug.trim();
+
+  // Live availability, debounced. Format problems are answered locally, so a
+  // half-typed slug never reaches the server.
+  useEffect(() => {
+    if (!open) return;
+    if (!trimmedSlug || formatError || !domainId) return;
+
+    const timer = setTimeout(async () => {
+      const result = await checkSlugAvailability(domainId, trimmedSlug);
+      setChecked({
+        slug: trimmedSlug,
+        domainId,
+        available: result.available,
+        message: result.message,
+      });
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [trimmedSlug, domainId, formatError, open]);
+
+  const verdict =
+    checked && checked.slug === trimmedSlug && checked.domainId === domainId
+      ? checked
+      : null;
+  const available = verdict?.available ?? false;
+  const takenMessage =
+    (verdict && !verdict.available ? verdict.message : null) ??
+    (serverError?.slug === trimmedSlug ? serverError.message : null);
+
   if (!open) return null;
 
   const destinationError = validateDestination(destination);
-  const slugError = validateSlug(slug);
-  const slugOk = Boolean(slug.trim()) && !slugError;
-  const invalid = !destination.trim() || Boolean(destinationError) || Boolean(slugError);
-  const previewSlug = slug || "summer-sale";
+  const slugError = formatError ?? takenMessage;
+  const invalid =
+    !destination.trim() ||
+    Boolean(destinationError) ||
+    !slug.trim() ||
+    Boolean(slugError);
+
+  const previewSlug = slug || "your-slug";
+  const previewHost =
+    options.domains.find((domain) => domain.id === domainId)?.host ?? "klip.to";
   const finalUrl = buildFinalUrl(destination || "https://example.com", utm);
 
   const setUtmField = (key: keyof Utm, value: string) =>
     setUtm((current) => ({ ...current, [key]: value }));
+
+  function reset() {
+    setDestination("");
+    setSlug("");
+    setTitle("");
+    setUtm(EMPTY_UTM);
+    setTouched({});
+    setChecked(null);
+    setServerError(null);
+    setFormError(null);
+  }
+
+  function onSubmit(form: FormData) {
+    setFormError(null);
+    startTransition(async () => {
+      const result = await createLink(form);
+      if (result.ok) {
+        onCreated(result.data);
+        reset();
+        onClose();
+        return;
+      }
+      // The server is the authority — surface its verdict on the right field.
+      setTouched({ destination: true, slug: true });
+      if (result.field === "slug") {
+        setServerError({ slug: trimmedSlug, message: result.error });
+      } else {
+        setFormError(result.error);
+      }
+    });
+  }
 
   return (
     <>
@@ -92,7 +175,8 @@ export function CreateLinkDrawer({
         onClick={onClose}
         aria-hidden="true"
       />
-      <aside
+      <form
+        action={onSubmit}
         role="dialog"
         aria-modal="true"
         aria-label="Create link"
@@ -127,6 +211,7 @@ export function CreateLinkDrawer({
           >
             <Input
               id={destinationId}
+              name="destination"
               value={destination}
               onChange={(event) => setDestination(event.target.value)}
               onBlur={() => setTouched((t) => ({ ...t, destination: true }))}
@@ -138,9 +223,14 @@ export function CreateLinkDrawer({
 
           <div className="grid grid-cols-[150px_1fr] gap-3">
             <Field label="Domain">
-              <Select defaultValue={DEFAULT_DOMAIN} className="h-[38px]">
+              <Select
+                name="domainId"
+                value={domainId}
+                onChange={(event) => setDomainId(event.target.value)}
+                className="h-[38px]"
+              >
                 {options.domains.map((domain) => (
-                  <option key={domain.id} value={domain.host}>
+                  <option key={domain.id} value={domain.id}>
                     {domain.host}
                   </option>
                 ))}
@@ -153,7 +243,7 @@ export function CreateLinkDrawer({
               hint={
                 touched.slug && slugError ? (
                   <FieldError>{slugError}</FieldError>
-                ) : slugOk ? (
+                ) : available ? (
                   <FieldSuccess>Available</FieldSuccess>
                 ) : null
               }
@@ -161,11 +251,13 @@ export function CreateLinkDrawer({
               <div className="relative">
                 <Input
                   id={slugId}
+                  name="slug"
                   mono
                   value={slug}
                   onChange={(event) => setSlug(normalizeSlug(event.target.value))}
                   onBlur={() => setTouched((t) => ({ ...t, slug: true }))}
                   invalid={Boolean(touched.slug && slugError)}
+                  placeholder="summer-sale"
                   className="h-[38px] pr-[74px]"
                 />
                 <button
@@ -184,7 +276,7 @@ export function CreateLinkDrawer({
               Preview
             </p>
             <p className="mt-[9px] font-mono text-body font-semibold text-ink">
-              {DEFAULT_DOMAIN}/{previewSlug}
+              {previewHost}/{previewSlug}
             </p>
             <p className="mt-[6px] break-all font-mono text-[11.5px] text-muted">
               → {finalUrl}
@@ -193,6 +285,7 @@ export function CreateLinkDrawer({
 
           <Field label="Title">
             <Input
+              name="title"
               value={title}
               onChange={(event) => setTitle(event.target.value)}
               placeholder="Summer sale — product"
@@ -203,7 +296,7 @@ export function CreateLinkDrawer({
           <div>
             <button
               type="button"
-              onClick={() => setUtmOpen((open) => !open)}
+              onClick={() => setUtmOpen((current) => !current)}
               className="flex w-full cursor-pointer items-center justify-between"
             >
               <Label>UTM parameters</Label>
@@ -211,33 +304,42 @@ export function CreateLinkDrawer({
                 {utmOpen ? "Hide" : "5 available"}
               </span>
             </button>
-            {utmOpen ? (
-              <div className="mt-3 grid grid-cols-2 gap-3">
-                {UTM_FIELDS.map((field) => (
-                  <div
-                    key={field.key}
-                    className={field.wide ? "col-span-2" : undefined}
-                  >
-                    <Field label={field.label}>
-                      <Input
-                        mono
-                        value={utm[field.key]}
-                        placeholder={field.placeholder}
-                        onChange={(event) =>
-                          setUtmField(field.key, event.target.value)
-                        }
-                        className="h-[34px] text-cell"
-                      />
-                    </Field>
-                  </div>
-                ))}
-              </div>
-            ) : null}
+            {/* Kept mounted when collapsed: unmounting would drop the values
+                from the submitted FormData while the preview still shows them. */}
+            <div
+              className={
+                utmOpen
+                  ? "mt-3 grid grid-cols-2 gap-3"
+                  : // `hidden` the attribute would lose to the `grid` class,
+                    // which also sets display — use the utility instead.
+                    "hidden"
+              }
+            >
+              {UTM_FIELDS.map((field) => (
+                <div
+                  key={field.key}
+                  className={field.wide ? "col-span-2" : undefined}
+                >
+                  <Field label={field.label}>
+                    <Input
+                      mono
+                      name={field.name}
+                      value={utm[field.key]}
+                      placeholder={field.placeholder}
+                      onChange={(event) =>
+                        setUtmField(field.key, event.target.value)
+                      }
+                      className="h-[34px] text-cell"
+                    />
+                  </Field>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <Field label="Project">
-              <Select className="h-[38px]" defaultValue="">
+              <Select name="projectId" className="h-[38px]" defaultValue="">
                 <option value="">No project</option>
                 {options.projects.map((project) => (
                   <option key={project.id} value={project.id}>
@@ -247,7 +349,7 @@ export function CreateLinkDrawer({
               </Select>
             </Field>
             <Field label="Folder">
-              <Select className="h-[38px]" defaultValue="">
+              <Select name="folderId" className="h-[38px]" defaultValue="">
                 <option value="">No folder</option>
                 {options.folders.map((folder) => (
                   <option key={folder.id} value={folder.id}>
@@ -257,34 +359,30 @@ export function CreateLinkDrawer({
               </Select>
             </Field>
           </div>
+
+          {formError ? <FieldError>{formError}</FieldError> : null}
         </div>
 
         <div className="flex items-center justify-between gap-3 border-t border-border bg-surface-sunken px-[22px] py-[14px]">
           <label className="flex cursor-pointer items-center gap-2 text-cell text-ink-secondary">
             <input
               type="checkbox"
+              name="generateQr"
               defaultChecked
               className="h-[14px] w-[14px] cursor-pointer accent-[var(--color-accent)]"
             />
             Generate QR code
           </label>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={onClose}>
+            <Button variant="ghost" onClick={onClose} disabled={pending}>
               Cancel
             </Button>
-            <Button
-              variant="primary"
-              disabled={invalid}
-              onClick={() => {
-                onCreated(previewSlug);
-                onClose();
-              }}
-            >
-              Create link
+            <Button type="submit" variant="primary" disabled={invalid || pending}>
+              {pending ? "Creating…" : "Create link"}
             </Button>
           </div>
         </div>
-      </aside>
+      </form>
     </>
   );
 }

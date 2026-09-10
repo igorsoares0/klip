@@ -17,9 +17,6 @@ export const RESERVED_SLUGS = [
   "settings",
 ];
 
-/** Stand-in for the debounced server availability check. */
-export const TAKEN_SLUGS = ["ig-bio", "newsletter", "creator-drop"];
-
 // Handoff rule: ^https?://[^\s.]+\.[^\s]{2,} — case-insensitive so a pasted
 // "HTTPS://…" is accepted. The trailing anchor rejects embedded whitespace.
 const DESTINATION_RE = /^https?:\/\/[^\s.]+\.[^\s]{2,}$/i;
@@ -38,6 +35,11 @@ export function validateDestination(value: string): string | null {
   return null;
 }
 
+/**
+ * Format and reserved-word rules only — pure, so it runs on both sides.
+ * Whether a slug is already taken is a database question; see
+ * `checkSlugAvailability` in src/links/actions.ts.
+ */
 export function validateSlug(value: string): string | null {
   const slug = value.trim();
   if (!slug) return null;
@@ -45,8 +47,10 @@ export function validateSlug(value: string): string | null {
   if (!SLUG_RE.test(slug)) {
     return "Use lowercase letters, numbers and hyphens only.";
   }
-  if (TAKEN_SLUGS.includes(slug)) {
-    return `${DEFAULT_DOMAIN}/${slug} is already in use — try ${slug}-2.`;
+  // normalizeSlug turns whitespace into hyphens, so "   " arrives here as "-".
+  // A path of pure hyphens is not a link anyone meant to make.
+  if (!/[a-z0-9]/.test(slug)) {
+    return "Use at least one letter or number.";
   }
   return null;
 }

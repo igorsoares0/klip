@@ -7,8 +7,10 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
+import { useRouter } from "next/navigation";
 import { AppShellContext, type ToastState } from "./app-shell-context";
 import { CreateLinkDrawer, type DrawerOptions } from "./create-link-drawer";
+import type { CreatedLink } from "@/links/actions";
 import { Header } from "./header";
 import { Sidebar, type UsageMeter } from "./sidebar";
 import { Toast } from "./toast";
@@ -39,6 +41,7 @@ export function AppShell({
   );
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [toast, setToast] = useState<ToastState | null>(null);
+  const router = useRouter();
 
   const toggleSidebar = useCallback(() => sidebarStore.toggle(), []);
   const openDrawer = useCallback(() => setDrawerOpen(true), []);
@@ -86,7 +89,11 @@ export function AppShell({
       <CreateLinkDrawer
         open={drawerOpen}
         onClose={closeDrawer}
-        onCreated={(slug) => showToast({ slug })}
+        onCreated={(link: CreatedLink) => {
+          showToast(link);
+          // The action revalidated on the server; pull the fresh render in.
+          router.refresh();
+        }}
         options={drawerOptions}
       />
       {toast ? <Toast toast={toast} onDismiss={dismissToast} /> : null}

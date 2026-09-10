@@ -3,7 +3,10 @@
 import { createContext, useContext } from "react";
 
 export interface ToastState {
+  /** The link that was just created — the toast links straight to it. */
+  id: string;
   slug: string;
+  host: string;
 }
 
 export interface AppShellValue {
