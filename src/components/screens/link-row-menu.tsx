@@ -10,6 +10,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { useDismiss } from "@/components/ui/use-dismiss";
 import { useAppShell } from "@/components/shell/app-shell-context";
 import { deleteLink, setLinkStatus } from "@/links/actions";
+import { ensureQrCode } from "@/qr/actions";
 import { cn } from "@/lib/utils";
 import type { LinkStatus } from "@/lib/types";
 
@@ -119,9 +120,22 @@ export function LinkRowMenu({
           <Link role="menuitem" href={`/dashboard/links/${id}`} className={item}>
             Analytics
           </Link>
-          <Link role="menuitem" href="/dashboard/qr-codes" className={item}>
+          <button
+            type="button"
+            role="menuitem"
+            className={item}
+            disabled={pending}
+            onClick={() =>
+              startTransition(async () => {
+                // Makes the code if this link never had one.
+                const result = await ensureQrCode(id);
+                if (result.ok) router.push("/dashboard/qr-codes");
+                else setError(result.error);
+              })
+            }
+          >
             QR code
-          </Link>
+          </button>
 
           <div className="my-1 h-px bg-divider" />
 

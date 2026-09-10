@@ -364,6 +364,11 @@ model QrCode {
 
   scans Int @default(0)
 
+  /// "Basic customization" (spec §15). Defaults are the design's ink and
+  /// surface. Validated for scannability in src/qr/colors.ts before saving.
+  fgColor String @default("#15151A")
+  bgColor String @default("#FFFFFF")
+
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   link      Link      @relation(fields: [linkId], references: [id], onDelete: Cascade)
 

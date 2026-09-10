@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { CheckIcon } from "@/components/icons";
+import { ensureQrCode } from "@/qr/actions";
 import type { ToastState } from "./app-shell-context";
 
 const AUTO_DISMISS_MS = 4500;
@@ -39,6 +40,18 @@ export function Toast({
         className="cursor-pointer rounded-pill px-3 py-[5px] text-meta font-semibold text-white/70 transition-colors hover:bg-white/10 hover:text-white"
       >
         Copy
+      </button>
+      {/* Spec §21 lists QR Code among the actions after creating a link. */}
+      <button
+        type="button"
+        onClick={async () => {
+          onDismiss();
+          const result = await ensureQrCode(toast.id);
+          if (result.ok) router.push("/dashboard/qr-codes");
+        }}
+        className="cursor-pointer rounded-pill px-3 py-[5px] text-meta font-semibold text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+      >
+        QR code
       </button>
       <button
         type="button"

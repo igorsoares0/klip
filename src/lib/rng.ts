@@ -1,9 +1,8 @@
 /**
  * Seeded LCG, ported verbatim from the design prototype.
  *
- * Every generated series must be deterministic: the charts render on the server
- * and hydrate on the client, so `Math.random()` here would produce a hydration
- * mismatch. Same reason the QR placeholder grid is seeded.
+ * Used by prisma/seed.ts so re-seeding produces the same click distribution
+ * every time.
  */
 export function rnd(seed: number): () => number {
   let s = seed;
