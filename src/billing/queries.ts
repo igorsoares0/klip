@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { getMonthlyClickUsage } from "@/analytics/queries";
+import { getMonthlyClickUsage, nextMonthStart } from "@/analytics/queries";
 import { CLICK_LIMIT } from "@/entitlements/limits";
 
 const PLAN_NAMES: Record<string, string> = {
@@ -7,6 +7,36 @@ const PLAN_NAMES: Record<string, string> = {
   FREE: "Klip Free",
 };
 
+/** The name a workspace's plan goes by, from its entitlement row. No row is Free. */
+export function planName(plan: string | null | undefined): string {
+  return PLAN_NAMES[plan ?? "FREE"] ?? "Klip";
+}
+
+const SHORT_DATE = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  timeZone: "UTC",
+});
+
+const LONG_DATE = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
+/** "Oct 1" — when tracked clicks reset. They count per UTC calendar month. */
+export function resetDate(now = new Date()): string {
+  return SHORT_DATE.format(nextMonthStart(now));
+}
+
+/**
+ * The billing screen, limited to what the database actually knows.
+ *
+ * The design showed a price, a receipt list and a PDF link. None of those exist
+ * until billing runs through Paddle (spec phase 6), so none are made up here —
+ * not even the price, which is a decision the code should not be quietly making.
+ */
 export async function getBilling(workspaceId: string) {
   const [entitlement, used] = await Promise.all([
     db.entitlement.findUnique({ where: { workspaceId } }),
@@ -14,41 +44,33 @@ export async function getBilling(workspaceId: string) {
   ]);
 
   const purchased = entitlement?.createdAt;
-  const nextMonth = new Date();
-  nextMonth.setMonth(nextMonth.getMonth() + 1, 1);
+  const via = entitlement?.paddleTransactionId ? " via Paddle" : "";
 
   return {
     plan: {
-      name: PLAN_NAMES[entitlement?.plan ?? "FREE"] ?? "Klip",
+      name: planName(entitlement?.plan),
       badge: `${entitlement?.plan ?? "FREE"} · ${entitlement?.status ?? "INACTIVE"}`,
       purchased: purchased
-        ? `Purchased ${purchased.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} via Paddle · $89 one-time`
+        ? `Purchased ${LONG_DATE.format(purchased)}${via}`
         : "No purchase on record",
     },
     usage: {
       label: "Tracked clicks this month",
       used,
       limit: CLICK_LIMIT,
-      resets: `Resets ${nextMonth.toLocaleDateString("en-US", { month: "short", day: "numeric" })} · need more? Add a click pack.`,
+      resets: `Resets ${resetDate()}`,
     },
-    invoices: entitlement?.paddleTransactionId
-      ? [
-          {
-            date: purchased!.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-            amount: "$89.00",
-          },
-          { date: "—", amount: "LTD · no renewal" },
-        ]
-      : [],
   };
 }
 
-/** Static: what the LIFETIME plan grants (spec §19). */
+/**
+ * Static: what the LIFETIME plan grants (spec §19), limited to what is built.
+ * Custom domains join this list when they exist (phase 7).
+ */
 export const LIFETIME_ENTITLEMENTS = [
   "Unlimited short links",
   "Unlimited projects & folders",
   "QR codes (PNG + SVG)",
   "Full click analytics",
   "UTM builder",
-  "3 custom domains",
 ];

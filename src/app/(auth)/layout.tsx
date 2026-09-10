@@ -1,7 +1,16 @@
+import { CLICK_LIMIT } from "@/entitlements/limits";
+import { compactNumber } from "@/shared/format";
+
+/**
+ * Facts about the product, each one true today. The design had a median
+ * redirect time nobody has measured, a price the code should not be deciding,
+ * and a customer quote from a customer that does not exist — on the one page
+ * every visitor sees before signing up.
+ */
 const STATS = [
-  { value: "38ms", label: "Median redirect" },
-  { value: "100k", label: "Clicks / month" },
-  { value: "$89", label: "One-time" },
+  { value: compactNumber(CLICK_LIMIT), label: "Tracked clicks / month" },
+  { value: "PNG · SVG", label: "QR codes" },
+  { value: "CSV", label: "Analytics export" },
 ];
 
 export default function AuthLayout({ children }: LayoutProps<"/">) {
@@ -28,13 +37,6 @@ export default function AuthLayout({ children }: LayoutProps<"/">) {
             </div>
           ))}
         </div>
-        <blockquote className="border-t border-white/12 pt-7 text-body text-white/70">
-          “We moved 4,000 links over in an afternoon. The analytics finally tell
-          us which creator actually drives sales.”
-          <footer className="mt-3 text-meta text-white/40">
-            Growth lead · Acme
-          </footer>
-        </blockquote>
       </div>
     </div>
   );

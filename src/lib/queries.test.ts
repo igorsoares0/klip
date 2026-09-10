@@ -59,6 +59,19 @@ describe("workspace isolation", () => {
     const domains = await listDomains(STRANGER);
     expect(domains.map((d) => d.host)).toContain("klip.to");
   });
+
+  it("counts only the caller's links on the shared domain", async () => {
+    // Every tenant's links sit on klip.to. An unscoped count would tell a
+    // brand-new workspace how many links everyone else has.
+    const theirs = (await listDomains(STRANGER)).find((d) => d.host === "klip.to");
+    expect(theirs?.links).toBe(0);
+
+    const ours = (await listDomains(WORKSPACE)).find((d) => d.host === "klip.to");
+    const actual = await db.link.count({
+      where: { workspaceId: WORKSPACE, domain: { host: "klip.to" }, deletedAt: null },
+    });
+    expect(ours?.links).toBe(actual);
+  });
 });
 
 describe("listLinks", () => {

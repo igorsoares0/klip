@@ -10,11 +10,19 @@ export interface DomainRow {
   status: DomainStatus;
 }
 
-/** Includes the shared system domain, which belongs to no workspace. */
+/**
+ * Includes the shared system domain, which belongs to no workspace.
+ *
+ * The link count is this workspace's links only. The shared domain carries
+ * every tenant's links, so an unscoped count would tell each customer how many
+ * links everyone else has.
+ */
 export async function listDomains(workspaceId: string): Promise<DomainRow[]> {
   const rows = await db.customDomain.findMany({
     where: { OR: [{ workspaceId }, { workspaceId: null }] },
-    include: { _count: { select: { links: { where: NOT_DELETED } } } },
+    include: {
+      _count: { select: { links: { where: { workspaceId, ...NOT_DELETED } } } },
+    },
     orderBy: { createdAt: "asc" },
   });
 
@@ -25,21 +33,4 @@ export async function listDomains(workspaceId: string): Promise<DomainRow[]> {
     links: row._count.links,
     status: row.status,
   }));
-}
-
-/** The DNS record card targets whichever domain is still waiting on a CNAME. */
-export async function getPendingVerification(workspaceId: string) {
-  const pending = await db.customDomain.findFirst({
-    where: { workspaceId, status: "PENDING_DNS" },
-  });
-  if (!pending) return null;
-
-  return {
-    host: pending.host,
-    record: [
-      { key: "TYPE", value: "CNAME" },
-      { key: "NAME", value: pending.host.split(".")[0] },
-      { key: "VALUE", value: "edge.klip.to" },
-    ],
-  };
 }

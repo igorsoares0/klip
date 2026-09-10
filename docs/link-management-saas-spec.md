@@ -2044,6 +2044,11 @@ long-running Hetzner container of §26) and moves the connection string out of t
   layout without appearing in the URL. `(marketing)` is not built — the design handoff covers
   the authenticated product only.
 - Retention and pruning of `link_clicks` remain unspecified; no policy is implemented.
+- **Screens for unbuilt phases show only what exists.** The design handoff filled Domains,
+  API and Billing with working-looking controls and sample output (a price, receipts, DNS
+  records, curl examples). A control that does nothing reads as a bug, so each is replaced by
+  a "Coming soon" note until its phase lands. The header search covers links only, and the
+  workspace name is a label rather than a switcher, since each account has one workspace.
 
 ## 42.6 Authentication
 

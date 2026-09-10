@@ -33,6 +33,20 @@ const USER_ID = "usr_maria";
 const DEV_EMAIL = "maria@acme.com";
 const DEV_PASSWORD = process.env.SEED_PASSWORD ?? "klip-dev-password";
 
+/**
+ * A second account with an empty workspace and no purchase: what a brand-new
+ * customer sees, and a second tenant to check that Acme's data never shows up
+ * anywhere else.
+ */
+const SECOND = {
+  userId: "usr_joao",
+  email: "joao@globex.com",
+  name: "João Silva",
+  workspaceId: "ws_globex",
+  workspaceName: "Globex",
+  workspaceSlug: "globex",
+};
+
 /** Visitors revisit, so unique visitors land near 70% of clicks, as designed. */
 const VISITOR_POOL = 0.72;
 
@@ -126,6 +140,8 @@ async function main() {
     update: {},
     create: { workspaceId: workspace.id, userId: user.id, role: "OWNER" },
   });
+
+  await seedSecondAccount(passwordHash);
 
   // klip.to is the shared system domain and belongs to no workspace.
   for (const domain of mockDomains) {
@@ -341,6 +357,7 @@ async function main() {
   });
 
   console.log(`Sign in with ${DEV_EMAIL} / ${DEV_PASSWORD}`);
+  console.log(`  or, for an empty workspace, ${SECOND.email} / ${DEV_PASSWORD}`);
   console.log("Seeded:", {
     workspaces: await db.workspace.count(),
     domains: await db.customDomain.count(),
@@ -352,6 +369,37 @@ async function main() {
     clicks,
     uniqueVisitors: uniques.length,
     uniqueRatio: `${Math.round((uniques.length / clicks) * 100)}%`,
+  });
+}
+
+/** Only the account, its workspace and membership — deliberately nothing else. */
+async function seedSecondAccount(passwordHash: string) {
+  const user = await db.user.upsert({
+    where: { id: SECOND.userId },
+    update: { passwordHash },
+    create: {
+      id: SECOND.userId,
+      name: SECOND.name,
+      email: SECOND.email,
+      emailVerified: new Date(),
+      passwordHash,
+    },
+  });
+
+  const workspace = await db.workspace.upsert({
+    where: { id: SECOND.workspaceId },
+    update: {},
+    create: {
+      id: SECOND.workspaceId,
+      name: SECOND.workspaceName,
+      slug: SECOND.workspaceSlug,
+    },
+  });
+
+  await db.workspaceMember.upsert({
+    where: { workspaceId_userId: { workspaceId: workspace.id, userId: user.id } },
+    update: {},
+    create: { workspaceId: workspace.id, userId: user.id, role: "OWNER" },
   });
 }
 

@@ -126,18 +126,33 @@ export function LinksToolbar({
 }) {
   const setParam = useParamSetter();
   const [q, setQ] = useState(state.q);
-  const latest = useRef(state.q);
+  // What this field last wrote to the URL, and the last ?q= the URL showed.
+  const [written, setWritten] = useState(state.q);
+  const [seen, setSeen] = useState(state.q);
+
+  // A ?q= this field did not write — the header search, the back button —
+  // replaces what is in the field. One it did write is just the round trip of
+  // the user's own typing, and adopting it would clobber whatever they typed
+  // since.
+  if (state.q !== seen) {
+    setSeen(state.q);
+    if (state.q !== written) {
+      setQ(state.q);
+      setWritten(state.q);
+    }
+  }
 
   // Debounced: typing rewrites the URL (replace, so history is not flooded)
   // once the user pauses, which re-runs the query on the server.
   useEffect(() => {
-    if (q === latest.current) return;
+    const next = q.trim();
+    if (next === written) return;
     const timer = setTimeout(() => {
-      latest.current = q;
-      setParam("q", q.trim() || null, "replace");
+      setWritten(next);
+      setParam("q", next || null, "replace");
     }, 300);
     return () => clearTimeout(timer);
-  }, [q, setParam]);
+  }, [q, written, setParam]);
 
   const projectOptions: Option[] = [
     { value: "", label: "All" },

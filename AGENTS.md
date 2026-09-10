@@ -27,7 +27,10 @@ npm run dev
 ```
 
 Sign in with **`maria@acme.com` / `klip-dev-password`**. The seed rewrites that password on
-every run, so it always works. Neon is the production database (spec §26); local development
+every run, so it always works.
+
+**`joao@globex.com`**, same password, owns an empty workspace with no purchase — the view a
+brand-new customer gets, and a second tenant for checking that Acme's data stays in Acme. Neon is the production database (spec §26); local development
 uses the container.
 
 **Short links do not work at the address the UI shows.** Every screen renders

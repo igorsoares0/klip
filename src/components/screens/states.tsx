@@ -1,7 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Button } from "@/components/ui/button";
 import { CreateLinkButton } from "@/components/shell/create-link-button";
 import { LinkGlyph } from "@/components/icons";
 import { DEFAULT_DOMAIN } from "@/lib/utils";
@@ -104,12 +103,9 @@ export function DashboardEmpty() {
         title="No clicks yet"
         description="Create your first link and share it — analytics start filling in within seconds of the first redirect."
         actions={
-          <>
-            <CreateLinkButton variant="primary">
-              Create your first link
-            </CreateLinkButton>
-            <Button>Import from CSV</Button>
-          </>
+          <CreateLinkButton variant="primary">
+            Create your first link
+          </CreateLinkButton>
         }
       >
         <div className="mt-10 grid w-full gap-[14px] [grid-template-columns:repeat(auto-fit,minmax(180px,1fr))]">

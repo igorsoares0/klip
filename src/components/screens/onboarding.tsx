@@ -4,20 +4,13 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CheckIcon, LinkGlyph } from "@/components/icons";
 import { Button } from "@/components/ui/button";
-import { Chip } from "@/components/ui/badge";
 import { Field, Input } from "@/components/ui/form";
 import { FieldError } from "@/components/ui/form";
 import { cn, normalizeSlug } from "@/lib/utils";
 import { nameWorkspace } from "@/workspaces/onboarding-actions";
-import { createLink } from "@/links/actions";
+import { createLink, type CreatedLink } from "@/links/actions";
 
 const STEPS = ["Workspace", "First link", "Done"];
-const USE_CASES = [
-  "Creator / influencer",
-  "Marketing team",
-  "Agency",
-  "Developer",
-];
 
 export function OnboardingScreen({
   initialName,
@@ -31,9 +24,12 @@ export function OnboardingScreen({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [workspaceName, setWorkspaceName] = useState(initialName);
-  const [useCase, setUseCase] = useState("Marketing team");
   const [destination, setDestination] = useState("");
-  const [slug, setSlug] = useState("summer-sale");
+  // Starts empty. A sample like "summer-sale" is taken on a shared domain by
+  // whoever got there first, so it would fail for most people who kept it.
+  const [slug, setSlug] = useState("");
+  // The link that was actually created — step 3 shows this, never the form.
+  const [created, setCreated] = useState<CreatedLink | null>(null);
 
   const slugSample = `${(workspaceName || "acme")
     .toLowerCase()
@@ -77,6 +73,7 @@ export function OnboardingScreen({
           setError(result.error);
           return;
         }
+        setCreated(result.data);
         router.refresh();
         setStep(3);
       });
@@ -146,20 +143,6 @@ export function OnboardingScreen({
               </p>
             </div>
 
-            <p className="mt-7 text-label font-medium text-ink-secondary">
-              What are you shortening links for?
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {USE_CASES.map((option) => (
-                <Chip
-                  key={option}
-                  selected={useCase === option}
-                  onClick={() => setUseCase(option)}
-                >
-                  {option}
-                </Chip>
-              ))}
-            </div>
           </>
         ) : null}
 
@@ -186,6 +169,8 @@ export function OnboardingScreen({
                     {host}/
                   </span>
                   <input
+                    aria-label="Short path"
+                    placeholder="launch"
                     value={slug}
                     onChange={(event) => setSlug(normalizeSlug(event.target.value))}
                     className="h-full min-w-0 flex-1 rounded-r-input border-0 bg-transparent pr-3 font-mono text-body text-ink outline-none focus:shadow-none"
@@ -201,28 +186,41 @@ export function OnboardingScreen({
             <span className="flex h-14 w-14 items-center justify-center rounded-pill bg-positive-bg text-positive">
               <CheckIcon size={24} />
             </span>
-            <h1 className="mt-5 text-[19px] font-semibold tracking-tight text-ink">
-              You&apos;re live
-            </h1>
-            <p className="mt-2 text-body text-muted">
-              Share it anywhere — the first click will show up in analytics within
-              seconds.
-            </p>
-            <div className="mt-6 flex w-full items-center justify-between gap-3 rounded-block bg-surface-sunken px-4 py-3">
-              <span className="truncate font-mono text-body text-ink">
-                {host}/{slug || "summer-sale"}
-              </span>
-              <Button
-                size="sm"
-                onClick={() =>
-                  navigator.clipboard?.writeText(
-                    `https://${host}/${slug || "summer-sale"}`,
-                  )
-                }
-              >
-                Copy
-              </Button>
-            </div>
+            {created ? (
+              <>
+                <h1 className="mt-5 text-[19px] font-semibold tracking-tight text-ink">
+                  You&apos;re live
+                </h1>
+                <p className="mt-2 text-body text-muted">
+                  Share it anywhere — the first click will show up in analytics
+                  within seconds.
+                </p>
+                <div className="mt-6 flex w-full items-center justify-between gap-3 rounded-block bg-surface-sunken px-4 py-3">
+                  <span className="truncate font-mono text-body text-ink">
+                    {created.host}/{created.slug}
+                  </span>
+                  <Button
+                    size="sm"
+                    onClick={() =>
+                      navigator.clipboard?.writeText(
+                        `https://${created.host}/${created.slug}`,
+                      )
+                    }
+                  >
+                    Copy
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h1 className="mt-5 text-[19px] font-semibold tracking-tight text-ink">
+                  Your workspace is ready
+                </h1>
+                <p className="mt-2 text-body text-muted">
+                  Create your first link from the dashboard whenever you like.
+                </p>
+              </>
+            )}
           </div>
         ) : null}
 
@@ -233,9 +231,14 @@ export function OnboardingScreen({
         ) : null}
 
         <div className="mt-8 flex items-center justify-between gap-3">
-          <Button variant="ghost" onClick={() => router.push("/dashboard")} disabled={pending}>
-            Skip for now
-          </Button>
+          {/* On the last step "Go to dashboard" already does this. */}
+          {step < 3 ? (
+            <Button variant="ghost" onClick={() => router.push("/dashboard")} disabled={pending}>
+              Skip for now
+            </Button>
+          ) : (
+            <span />
+          )}
           <Button variant="primary" onClick={advance} disabled={pending}>
             {pending ? "Saving…" : cta}
           </Button>

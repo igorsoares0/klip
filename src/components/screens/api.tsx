@@ -7,17 +7,9 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScopeBadge } from "@/components/ui/badge";
 import { PlusIcon } from "@/components/icons";
-import { endpoints, quickStartCurl } from "@/api-keys/docs";
-import { cn } from "@/lib/utils";
+import { ComingSoon } from "@/components/ui/coming-soon";
 import type { ApiKeyRow } from "@/api-keys/queries";
 import { createApiKey, revokeApiKey } from "@/api-keys/actions";
-
-const TONE: Record<string, string> = {
-  positive: "text-positive",
-  accent: "text-accent",
-  warning: "text-warning",
-  danger: "text-danger",
-};
 
 export function ApiScreen({ apiKeys }: { apiKeys: ApiKeyRow[] }) {
   // Held in memory only, and only until the next navigation: this is the one
@@ -53,7 +45,7 @@ export function ApiScreen({ apiKeys }: { apiKeys: ApiKeyRow[] }) {
     <div className="mx-auto max-w-content animate-klip-in">
       <PageHeader
         title="API"
-        sub="Create links programmatically. Keys are scoped to this workspace."
+        sub="Keys are scoped to this workspace."
         action={
           <Button
             variant="primary"
@@ -126,30 +118,10 @@ export function ApiScreen({ apiKeys }: { apiKeys: ApiKeyRow[] }) {
         ))}
       </Card>
 
-      <Card className="mt-[18px] px-5 pb-5 pt-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-card-title font-semibold text-ink">Quick start</h2>
-          <span className="text-meta text-muted">
-            Rate limit: 60 req/min per key
-          </span>
-        </div>
-        <pre className="mt-4 overflow-x-auto rounded-block bg-ink px-4 py-4 font-mono text-[11.5px] leading-[1.7] text-code-fg">
-          {quickStartCurl}
-        </pre>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {endpoints.map((endpoint) => (
-            <span
-              key={`${endpoint.method} ${endpoint.path}`}
-              className="inline-flex items-center gap-2 rounded-chip border border-border bg-surface-sunken px-[10px] py-[6px] font-mono text-[11.5px]"
-            >
-              <span className={cn("font-semibold", TONE[endpoint.tone])}>
-                {endpoint.method}
-              </span>
-              <span className="text-ink-secondary">{endpoint.path}</span>
-            </span>
-          ))}
-        </div>
-      </Card>
+      <ComingSoon title="REST API" className="mt-[18px]">
+        The endpoints for creating and managing links arrive in a later release.
+        Keys created here are the ones they will accept.
+      </ComingSoon>
     </div>
   );
 }

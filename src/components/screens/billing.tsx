@@ -1,23 +1,22 @@
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { CheckIcon } from "@/components/icons";
+import { ComingSoon } from "@/components/ui/coming-soon";
 import { formatNumber } from "@/shared/format";
-import type { Invoice } from "@/lib/types";
 
 export interface BillingData {
   plan: { name: string; badge: string; purchased: string };
   usage: { label: string; used: number; limit: number; resets: string };
-  invoices: Invoice[];
   entitlements: string[];
 }
 
 export function BillingScreen({ data }: { data: BillingData }) {
-  const { plan, usage, invoices, entitlements } = data;
+  const { plan, usage, entitlements } = data;
   const pct = Math.min(100, Math.round((usage.used / usage.limit) * 100));
 
   return (
     <div className="mx-auto max-w-content animate-klip-in">
-      <PageHeader title="Billing" sub="Your plan, usage and receipts." />
+      <PageHeader title="Billing" sub="Your plan and usage." />
 
       <div className="rounded-panel bg-ink px-6 py-6">
         <div className="grid gap-6 [grid-template-columns:repeat(auto-fit,minmax(280px,1fr))]">
@@ -64,34 +63,9 @@ export function BillingScreen({ data }: { data: BillingData }) {
           </ul>
         </Card>
 
-        <Card className="px-5 pb-4 pt-4">
-          <h2 className="text-card-title font-semibold text-ink">Receipts</h2>
-          <div className="mt-3 flex flex-col">
-            {invoices.map((invoice, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between gap-3 border-b border-divider py-[11px] last:border-b-0"
-              >
-                <span className="text-cell text-ink-secondary">
-                  {invoice.date}
-                </span>
-                <span className="font-mono text-cell text-ink">
-                  {invoice.amount}
-                </span>
-                {index === 0 ? (
-                  <button
-                    type="button"
-                    className="cursor-pointer text-meta font-semibold text-accent hover:text-accent-hover"
-                  >
-                    PDF
-                  </button>
-                ) : (
-                  <span className="w-[26px]" />
-                )}
-              </div>
-            ))}
-          </div>
-        </Card>
+        <ComingSoon title="Receipts" className="self-start">
+          Purchases and receipts arrive with Paddle checkout, in a later release.
+        </ComingSoon>
       </div>
     </div>
   );

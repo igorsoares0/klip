@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { getMonthlyClickUsage } from "@/analytics/queries";
 import { CLICK_LIMIT } from "@/entitlements/limits";
+import { planName, resetDate } from "@/billing/queries";
 import { compactNumber } from "@/shared/format";
 
 /**
@@ -11,7 +12,7 @@ import { compactNumber } from "@/shared/format";
  * hold more than one person.
  */
 export async function getShellData(workspaceId: string, userId: string) {
-  const [workspace, member, used] = await Promise.all([
+  const [workspace, member, used, entitlement] = await Promise.all([
     db.workspace.findUnique({
       where: { id: workspaceId },
       include: { defaultDomain: { select: { host: true } } },
@@ -21,6 +22,7 @@ export async function getShellData(workspaceId: string, userId: string) {
       include: { user: { select: { name: true, email: true } } },
     }),
     getMonthlyClickUsage(workspaceId),
+    db.entitlement.findUnique({ where: { workspaceId }, select: { plan: true } }),
   ]);
 
   const name = workspace?.name ?? "Workspace";
@@ -42,7 +44,8 @@ export async function getShellData(workspaceId: string, userId: string) {
       label: "Tracked clicks",
       display: `${compactNumber(used)} / ${compactNumber(CLICK_LIMIT)}`,
       pct: Math.min(100, Math.round((used / CLICK_LIMIT) * 100)),
-      note: "Lifetime plan · resets monthly",
+      // From the entitlement row: a workspace without a purchase is not "Lifetime".
+      note: `${planName(entitlement?.plan)} · resets ${resetDate()}`,
     },
   };
 }

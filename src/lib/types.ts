@@ -117,10 +117,4 @@ export interface ApiKey {
   scope: ApiKeyScope;
 }
 
-export interface Invoice {
-  date: string;
-  amount: string;
-  note?: string;
-}
-
 export type TimeRange = "24h" | "7d" | "30d" | "90d" | "custom";

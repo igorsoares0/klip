@@ -475,11 +475,25 @@ export async function getFastestGrowing(workspaceId: string) {
 }
 
 /** Clicks tracked in the current calendar month, for the usage meters. */
-export async function getMonthlyClickUsage(workspaceId: string): Promise<number> {
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+/**
+ * The tracked-click month is the UTC calendar month, like every other day and
+ * bucket in analytics. It used to be the server's local month, which would move
+ * the reset by a timezone offset depending on where the app is deployed.
+ */
+export function monthStart(now = new Date()): Date {
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+}
+
+export function nextMonthStart(now = new Date()): Date {
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+}
+
+export async function getMonthlyClickUsage(
+  workspaceId: string,
+  now = new Date(),
+): Promise<number> {
   return db.linkClick.count({
-    where: { workspaceId, isBot: false, timestamp: { gte: monthStart } },
+    where: { workspaceId, isBot: false, timestamp: { gte: monthStart(now), lt: now } },
   });
 }
 
