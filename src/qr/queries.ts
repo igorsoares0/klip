@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { shortDate } from "@/shared/format";
+import { NOT_DELETED } from "@/links/live";
 
 export interface QrCard {
   id: string;
@@ -11,7 +12,8 @@ export interface QrCard {
 
 export async function listQrCodes(workspaceId: string): Promise<QrCard[]> {
   const rows = await db.qrCode.findMany({
-    where: { workspaceId },
+    // A QR whose link was deleted has nothing to point at any more.
+    where: { workspaceId, link: NOT_DELETED },
     include: {
       link: { include: { domain: { select: { host: true } } } },
     },

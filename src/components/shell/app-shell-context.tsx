@@ -13,6 +13,8 @@ export interface AppShellValue {
   expanded: boolean;
   toggleSidebar: () => void;
   openDrawer: () => void;
+  /** Opens the same drawer in edit mode, loaded with the link's current values. */
+  editLink: (id: string) => void;
   closeDrawer: () => void;
   drawerOpen: boolean;
   toast: ToastState | null;

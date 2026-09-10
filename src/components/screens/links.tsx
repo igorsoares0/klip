@@ -1,21 +1,23 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge, LinkStatusBadge } from "@/components/ui/badge";
-import { Button, IconButton } from "@/components/ui/button";
-import { ChevronDown, DotsIcon } from "@/components/icons";
+import { Button } from "@/components/ui/button";
 import { formatNumber } from "@/shared/format";
-import type { LinkRow } from "@/links/queries";
-
-const FILTERS = [
-  { label: "Project:", value: "All" },
-  { label: "Status:", value: "Active" },
-  { label: "Sort:", value: "Clicks" },
-];
+import type { LinkListResult } from "@/links/queries";
+import { LinkRowMenu } from "./link-row-menu";
+import { LinksToolbar, useClearFilters, type ToolbarState } from "./links-toolbar";
 
 export interface LinksData {
-  links: LinkRow[];
+  list: LinkListResult;
   counts: { active: number; paused: number; archived: number; total: number };
+  filters: ToolbarState & { page: number };
+  /** Whether anything narrows the list — separates "no matches" from "no links". */
+  filtered: boolean;
+  projects: Array<{ id: string; name: string }>;
 }
 
 /**
@@ -35,8 +37,48 @@ const DOT_COLORS: Record<number, string> = {
   6: "var(--color-dot-6)",
 };
 
+function Pagination({ list }: { list: LinkListResult }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  function go(page: number) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (page <= 1) params.delete("page");
+    else params.set("page", String(page));
+    const query = params.toString();
+    router.push(query ? `${pathname}?${query}` : pathname);
+  }
+
+  const from = list.total === 0 ? 0 : (list.page - 1) * list.pageSize + 1;
+  const to = Math.min(list.page * list.pageSize, list.total);
+
+  return (
+    <div className="flex items-center justify-between gap-3 border-t border-border px-[18px] py-3">
+      <span className="text-meta text-muted">
+        {list.total === 0
+          ? "No links"
+          : `Showing ${from}–${to} of ${formatNumber(list.total)}`}
+      </span>
+      <div className="flex items-center gap-2">
+        <Button size="sm" disabled={list.page <= 1} onClick={() => go(list.page - 1)}>
+          Previous
+        </Button>
+        <Button
+          size="sm"
+          disabled={list.page >= list.pageCount}
+          onClick={() => go(list.page + 1)}
+        >
+          Next
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function LinksScreen({ data }: { data: LinksData }) {
-  const { links, counts } = data;
+  const { list, counts } = data;
+  const clearFilters = useClearFilters();
 
   return (
     <div className="mx-auto max-w-content animate-klip-in">
@@ -45,26 +87,9 @@ export function LinksScreen({ data }: { data: LinksData }) {
         sub={`${counts.active} active · ${counts.paused} paused · ${counts.archived} archived`}
       />
 
-      <div className="mb-[14px] flex flex-wrap items-center gap-2">
-        <input
-          type="search"
-          placeholder="Filter by slug, destination or title"
-          className="h-9 min-w-[220px] flex-1 rounded-input border border-border-strong bg-surface px-3 text-body text-ink transition-colors hover:border-border-hover"
-        />
-        {FILTERS.map((filter) => (
-          <button
-            key={filter.label}
-            type="button"
-            className="flex h-9 cursor-pointer items-center gap-[6px] rounded-input border border-border-strong bg-surface px-3 text-cell whitespace-nowrap transition-colors hover:border-border-hover"
-          >
-            <span className="text-muted">{filter.label}</span>
-            <span className="font-semibold text-ink">{filter.value}</span>
-            <ChevronDown size={13} className="text-faint" />
-          </button>
-        ))}
-      </div>
+      <LinksToolbar state={data.filters} projects={data.projects} />
 
-      <Card className="overflow-hidden">
+      <Card>
         <div className="overflow-x-auto">
           <div
             className={`${ROW} border-b border-border bg-surface-sunken px-[18px] py-[10px] text-col font-semibold tracking-col text-muted-soft uppercase`}
@@ -78,82 +103,88 @@ export function LinksScreen({ data }: { data: LinksData }) {
             <span />
           </div>
 
-          {links.map((link) => (
-            <div
-              key={link.id}
-              className={`${ROW} items-center border-b border-divider px-[18px] py-[13px] transition-colors last:border-b-0 hover:bg-surface-sunken`}
-            >
-              <div className="flex min-w-0 items-center gap-[10px]">
-                <span
-                  aria-hidden="true"
-                  className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-chip bg-surface-muted text-[13px] text-muted"
-                >
-                  {link.favicon}
-                </span>
-                <span className="min-w-0">
-                  <Link
-                    href={`/dashboard/links/${link.id}`}
-                    className="block truncate font-mono text-cell font-medium text-ink transition-colors hover:text-accent"
+          {list.rows.length === 0 ? (
+            // Distinct from the first-link empty state: the workspace has links,
+            // this search or filter just matches none of them.
+            <div className="flex flex-col items-center gap-3 px-[18px] py-14 text-center">
+              <p className="text-body font-medium text-ink">No links match</p>
+              <p className="text-meta text-muted">
+                Try a different search, or clear the filters.
+              </p>
+              {data.filtered ? (
+                <Button size="sm" onClick={clearFilters}>
+                  Clear filters
+                </Button>
+              ) : null}
+            </div>
+          ) : (
+            list.rows.map((link) => (
+              <div
+                key={link.id}
+                className={`${ROW} items-center border-b border-divider px-[18px] py-[13px] transition-colors last:border-b-0 hover:bg-surface-sunken`}
+              >
+                <div className="flex min-w-0 items-center gap-[10px]">
+                  <span
+                    aria-hidden="true"
+                    className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-chip bg-surface-muted text-[13px] text-muted"
                   >
-                    {link.domain}/{link.slug}
-                  </Link>
-                  <span className="block truncate text-[11px] text-faint">
-                    {link.title}
+                    {link.favicon}
                   </span>
+                  <span className="min-w-0">
+                    <Link
+                      href={`/dashboard/links/${link.id}`}
+                      className="block truncate font-mono text-cell font-medium text-ink transition-colors hover:text-accent"
+                    >
+                      {link.domain}/{link.slug}
+                    </Link>
+                    <span className="block truncate text-[11px] text-faint">
+                      {link.title}
+                    </span>
+                  </span>
+                </div>
+
+                <span className="truncate text-cell text-muted">
+                  {link.destinationUrl.replace(/^https?:\/\//, "")}
+                </span>
+
+                <span className="text-right font-mono text-cell font-medium text-ink">
+                  {formatNumber(link.clicks)}
+                </span>
+
+                <span className="min-w-0">
+                  {link.projectName ? (
+                    <Badge tone="neutral" className="max-w-full">
+                      <span
+                        aria-hidden="true"
+                        className="h-[6px] w-[6px] shrink-0 rounded-pill"
+                        style={{ background: DOT_COLORS[link.projectDot ?? 6] }}
+                      />
+                      <span className="truncate">{link.projectName}</span>
+                    </Badge>
+                  ) : (
+                    <span className="text-cell text-faint">—</span>
+                  )}
+                </span>
+
+                <span className="text-cell text-muted">{link.createdAt}</span>
+
+                <span>
+                  <LinkStatusBadge status={link.status} />
+                </span>
+
+                <span className="flex justify-end">
+                  <LinkRowMenu
+                    id={link.id}
+                    shortUrl={`${link.domain}/${link.slug}`}
+                    status={link.status}
+                  />
                 </span>
               </div>
-
-              <span className="truncate text-cell text-muted">
-                {link.destinationUrl.replace(/^https?:\/\//, "")}
-              </span>
-
-              <span className="text-right font-mono text-cell font-medium text-ink">
-                {formatNumber(link.clicks)}
-              </span>
-
-              <span className="min-w-0">
-                {link.projectName ? (
-                  <Badge tone="neutral" className="max-w-full">
-                    <span
-                      aria-hidden="true"
-                      className="h-[6px] w-[6px] shrink-0 rounded-pill"
-                      style={{
-                        background: DOT_COLORS[link.projectDot ?? 6],
-                      }}
-                    />
-                    <span className="truncate">{link.projectName}</span>
-                  </Badge>
-                ) : (
-                  <span className="text-cell text-faint">—</span>
-                )}
-              </span>
-
-              <span className="text-cell text-muted">{link.createdAt}</span>
-
-              <span>
-                <LinkStatusBadge status={link.status} />
-              </span>
-
-              <span className="flex justify-end">
-                <IconButton label="Link actions">
-                  <DotsIcon size={16} />
-                </IconButton>
-              </span>
-            </div>
-          ))}
+            ))
+          )}
         </div>
 
-        <div className="flex items-center justify-between gap-3 border-t border-border px-[18px] py-3">
-          <span className="text-meta text-muted">
-            Showing {links.length} of {counts.total} links
-          </span>
-          <div className="flex items-center gap-2">
-            <Button size="sm" disabled>
-              Previous
-            </Button>
-            <Button size="sm">Next</Button>
-          </div>
-        </div>
+        <Pagination list={list} />
       </Card>
     </div>
   );

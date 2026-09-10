@@ -36,6 +36,7 @@ export default async function LinkDetailPage(
   return (
     <LinkDetailScreen
       data={{
+        id: link.id,
         shortUrl: `${link.domain.host}/${link.slug}`,
         destination,
         status: link.status,

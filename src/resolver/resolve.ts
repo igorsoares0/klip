@@ -12,6 +12,8 @@ export interface ResolvedLink {
   id: string;
   workspaceId: string;
   status: LinkStatus;
+  /** Soft-deleted links still resolve, so the route can answer 410 Gone. */
+  deleted: boolean;
   destination: string;
   /** Privacy settings of the owning workspace, applied when recording. */
   workspace: {
@@ -66,6 +68,7 @@ export async function resolveLink(
       id: true,
       workspaceId: true,
       status: true,
+      deletedAt: true,
       destinationUrl: true,
       utmSource: true,
       utmMedium: true,
@@ -88,6 +91,7 @@ export async function resolveLink(
     id: link.id,
     workspaceId: link.workspaceId,
     status: link.status,
+    deleted: link.deletedAt !== null,
     destination: buildFinalUrl(link.destinationUrl, {
       source: link.utmSource ?? "",
       medium: link.utmMedium ?? "",

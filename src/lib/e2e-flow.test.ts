@@ -43,7 +43,7 @@ it("creates a link that shows up in the list, the detail page and QR codes", asy
   expect(detail?.utmMedium).toBeNull();
 
   // ...and appears in the links list with no clicks yet.
-  const listed = await listLinks(WORKSPACE, 100);
+  const listed = (await listLinks(WORKSPACE, { take: 100 })).rows;
   const row = listed.find((link) => link.id === result.data.id);
   expect(row?.clicks).toBe(0);
   expect(row?.createdAt).toBe("just now");

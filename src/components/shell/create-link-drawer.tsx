@@ -19,8 +19,12 @@ import {
   validateDestination,
   validateSlug,
 } from "@/lib/utils";
-import { checkSlugAvailability, createLink } from "@/links/actions";
-import type { CreatedLink } from "@/links/actions";
+import {
+  checkSlugAvailability,
+  createLink,
+  updateLink,
+} from "@/links/actions";
+import type { CreatedLink, EditableLink } from "@/links/actions";
 
 const UTM_FIELDS: Array<{ label: string; key: keyof Utm; name: string; placeholder: string; wide?: boolean }> = [
   { label: "Source", key: "source", name: "utmSource", placeholder: "instagram" },
@@ -44,22 +48,33 @@ export interface DrawerOptions {
   domains: Array<{ id: string; host: string }>;
 }
 
+/**
+ * One drawer, two modes. Passing `editing` switches it to edit: fields arrive
+ * pre-filled, the slug is shown but locked, and submit updates instead of
+ * creating. The shell remounts it (via `key`) whenever the link being edited
+ * changes, so its initial state is always the right one.
+ */
 export function CreateLinkDrawer({
   open,
   onClose,
   onCreated,
+  onSaved,
   options,
+  editing = null,
 }: {
   open: boolean;
   onClose: () => void;
   onCreated: (link: CreatedLink) => void;
+  onSaved?: (id: string) => void;
   options: DrawerOptions;
+  editing?: EditableLink | null;
 }) {
-  const [destination, setDestination] = useState("");
-  const [slug, setSlug] = useState("");
-  const [title, setTitle] = useState("");
+  const isEdit = editing !== null;
+  const [destination, setDestination] = useState(editing?.destination ?? "");
+  const [slug, setSlug] = useState(editing?.slug ?? "");
+  const [title, setTitle] = useState(editing?.title ?? "");
   const [domainId, setDomainId] = useState(options.domains[0]?.id ?? "");
-  const [utm, setUtm] = useState<Utm>(EMPTY_UTM);
+  const [utm, setUtm] = useState<Utm>(editing?.utm ?? EMPTY_UTM);
   const [utmOpen, setUtmOpen] = useState(true);
   const [touched, setTouched] = useState<{ destination?: boolean; slug?: boolean }>({});
   // The verdict is stored with the slug it answered for. Deriving from that
@@ -94,7 +109,8 @@ export function CreateLinkDrawer({
   // Live availability, debounced. Format problems are answered locally, so a
   // half-typed slug never reaches the server.
   useEffect(() => {
-    if (!open) return;
+    // An existing link's slug is locked, so there is nothing to check.
+    if (!open || isEdit) return;
     if (!trimmedSlug || formatError || !domainId) return;
 
     const timer = setTimeout(async () => {
@@ -108,7 +124,7 @@ export function CreateLinkDrawer({
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [trimmedSlug, domainId, formatError, open]);
+  }, [trimmedSlug, domainId, formatError, open, isEdit]);
 
   const verdict =
     checked && checked.slug === trimmedSlug && checked.domainId === domainId
@@ -122,7 +138,7 @@ export function CreateLinkDrawer({
   if (!open) return null;
 
   const destinationError = validateDestination(destination);
-  const slugError = formatError ?? takenMessage;
+  const slugError = isEdit ? null : (formatError ?? takenMessage);
   const invalid =
     !destination.trim() ||
     Boolean(destinationError) ||
@@ -130,8 +146,9 @@ export function CreateLinkDrawer({
     Boolean(slugError);
 
   const previewSlug = slug || "your-slug";
-  const previewHost =
-    options.domains.find((domain) => domain.id === domainId)?.host ?? "klip.to";
+  const previewHost = isEdit
+    ? editing.host
+    : (options.domains.find((domain) => domain.id === domainId)?.host ?? "klip.to");
   const finalUrl = buildFinalUrl(destination || "https://example.com", utm);
 
   const setUtmField = (key: keyof Utm, value: string) =>
@@ -150,6 +167,21 @@ export function CreateLinkDrawer({
 
   function onSubmit(form: FormData) {
     setFormError(null);
+
+    if (isEdit) {
+      startTransition(async () => {
+        const result = await updateLink(editing.id, form);
+        if (result.ok) {
+          onSaved?.(editing.id);
+          onClose();
+          return;
+        }
+        setTouched({ destination: true });
+        setFormError(result.error);
+      });
+      return;
+    }
+
     startTransition(async () => {
       const result = await createLink(form);
       if (result.ok) {
@@ -179,12 +211,14 @@ export function CreateLinkDrawer({
         action={onSubmit}
         role="dialog"
         aria-modal="true"
-        aria-label="Create link"
+        aria-label={isEdit ? "Edit link" : "Create link"}
         className="fixed inset-y-0 right-0 z-[60] flex w-[520px] max-w-full flex-col bg-surface shadow-drawer animate-klip-slide"
       >
         <div className="flex items-start justify-between gap-4 border-b border-border px-[22px] py-4">
           <div>
-            <h2 className="text-[15px] font-semibold text-ink">Create link</h2>
+            <h2 className="text-[15px] font-semibold text-ink">
+              {isEdit ? "Edit link" : "Create link"}
+            </h2>
             <p className="mt-1 text-meta text-muted">
               Short link → tracking → optimization
             </p>
@@ -227,13 +261,18 @@ export function CreateLinkDrawer({
                 name="domainId"
                 value={domainId}
                 onChange={(event) => setDomainId(event.target.value)}
-                className="h-[38px]"
+                disabled={isEdit}
+                className="h-[38px] disabled:cursor-not-allowed disabled:bg-surface-sunken disabled:text-muted"
               >
-                {options.domains.map((domain) => (
-                  <option key={domain.id} value={domain.id}>
-                    {domain.host}
-                  </option>
-                ))}
+                {isEdit ? (
+                  <option value="">{editing.host}</option>
+                ) : (
+                  options.domains.map((domain) => (
+                    <option key={domain.id} value={domain.id}>
+                      {domain.host}
+                    </option>
+                  ))
+                )}
               </Select>
             </Field>
 
@@ -241,7 +280,12 @@ export function CreateLinkDrawer({
               label="Slug"
               htmlFor={slugId}
               hint={
-                touched.slug && slugError ? (
+                isEdit ? (
+                  <p className="text-caption text-faint">
+                    Locked — links already shared and QR codes already printed
+                    depend on it.
+                  </p>
+                ) : touched.slug && slugError ? (
                   <FieldError>{slugError}</FieldError>
                 ) : available ? (
                   <FieldSuccess>Available</FieldSuccess>
@@ -254,19 +298,26 @@ export function CreateLinkDrawer({
                   name="slug"
                   mono
                   value={slug}
+                  readOnly={isEdit}
                   onChange={(event) => setSlug(normalizeSlug(event.target.value))}
                   onBlur={() => setTouched((t) => ({ ...t, slug: true }))}
                   invalid={Boolean(touched.slug && slugError)}
                   placeholder="summer-sale"
-                  className="h-[38px] pr-[74px]"
+                  className={
+                    isEdit
+                      ? "h-[38px] cursor-not-allowed bg-surface-sunken text-muted"
+                      : "h-[38px] pr-[74px]"
+                  }
                 />
-                <button
-                  type="button"
-                  onClick={() => setSlug(randomSlug())}
-                  className="absolute right-[5px] top-1/2 -translate-y-1/2 cursor-pointer rounded-chip bg-surface-muted px-[9px] py-[5px] text-[11.5px] font-semibold text-ink-secondary transition-colors hover:bg-surface-track"
-                >
-                  Random
-                </button>
+                {isEdit ? null : (
+                  <button
+                    type="button"
+                    onClick={() => setSlug(randomSlug())}
+                    className="absolute right-[5px] top-1/2 -translate-y-1/2 cursor-pointer rounded-chip bg-surface-muted px-[9px] py-[5px] text-[11.5px] font-semibold text-ink-secondary transition-colors hover:bg-surface-track"
+                  >
+                    Random
+                  </button>
+                )}
               </div>
             </Field>
           </div>
@@ -339,7 +390,11 @@ export function CreateLinkDrawer({
 
           <div className="grid grid-cols-2 gap-3">
             <Field label="Project">
-              <Select name="projectId" className="h-[38px]" defaultValue="">
+              <Select
+                name="projectId"
+                className="h-[38px]"
+                defaultValue={editing?.projectId ?? ""}
+              >
                 <option value="">No project</option>
                 {options.projects.map((project) => (
                   <option key={project.id} value={project.id}>
@@ -349,7 +404,11 @@ export function CreateLinkDrawer({
               </Select>
             </Field>
             <Field label="Folder">
-              <Select name="folderId" className="h-[38px]" defaultValue="">
+              <Select
+                name="folderId"
+                className="h-[38px]"
+                defaultValue={editing?.folderId ?? ""}
+              >
                 <option value="">No folder</option>
                 {options.folders.map((folder) => (
                   <option key={folder.id} value={folder.id}>
@@ -364,21 +423,31 @@ export function CreateLinkDrawer({
         </div>
 
         <div className="flex items-center justify-between gap-3 border-t border-border bg-surface-sunken px-[22px] py-[14px]">
-          <label className="flex cursor-pointer items-center gap-2 text-cell text-ink-secondary">
-            <input
-              type="checkbox"
-              name="generateQr"
-              defaultChecked
-              className="h-[14px] w-[14px] cursor-pointer accent-[var(--color-accent)]"
-            />
-            Generate QR code
-          </label>
+          {isEdit ? (
+            <span />
+          ) : (
+            <label className="flex cursor-pointer items-center gap-2 text-cell text-ink-secondary">
+              <input
+                type="checkbox"
+                name="generateQr"
+                defaultChecked
+                className="h-[14px] w-[14px] cursor-pointer accent-[var(--color-accent)]"
+              />
+              Generate QR code
+            </label>
+          )}
           <div className="flex items-center gap-2">
             <Button variant="ghost" onClick={onClose} disabled={pending}>
               Cancel
             </Button>
             <Button type="submit" variant="primary" disabled={invalid || pending}>
-              {pending ? "Creating…" : "Create link"}
+              {pending
+                ? isEdit
+                  ? "Saving…"
+                  : "Creating…"
+                : isEdit
+                  ? "Save changes"
+                  : "Create link"}
             </Button>
           </div>
         </div>

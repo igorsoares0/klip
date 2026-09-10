@@ -3,15 +3,14 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { LinkStatusBadge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { BarChart } from "@/components/ui/bar-chart";
 import { BreakdownPanelCard } from "@/components/ui/breakdown";
 import { ChevronLeft } from "@/components/icons";
 import type { BreakdownPanel, LinkStatus, SeriesPoint, Stat } from "@/lib/types";
-
-const ACTIONS = ["Copy", "QR code", "Edit", "Pause"];
+import { LinkDetailActions } from "./link-detail-actions";
 
 export interface LinkDetailData {
+  id: string;
   shortUrl: string;
   destination: string;
   status: LinkStatus;
@@ -35,9 +34,9 @@ export function LinkDetailScreen({ data }: { data: LinkDetailData }) {
         title={data.shortUrl}
         badge={<LinkStatusBadge status={data.status} />}
         sub={<span className="break-all font-mono text-meta">{data.destination}</span>}
-        action={ACTIONS.map((action) => (
-          <Button key={action}>{action}</Button>
-        ))}
+        action={
+          <LinkDetailActions id={data.id} shortUrl={data.shortUrl} status={data.status} />
+        }
       />
 
       <div className="grid gap-[14px] [grid-template-columns:repeat(auto-fit,minmax(180px,1fr))]">

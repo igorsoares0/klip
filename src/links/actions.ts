@@ -160,3 +160,147 @@ export async function createLink(
     throw error;
   }
 }
+
+/**
+ * Edits a link. The slug is never read from the form: a short link that has
+ * been shared or printed as a QR code has to keep working (spec §15), so a
+ * crafted POST carrying a new slug is simply ignored.
+ */
+export async function updateLink(
+  id: string,
+  form: FormData,
+): Promise<ActionResult<{ id: string }>> {
+  const workspaceId = await getCurrentWorkspaceId();
+
+  const destination = text(form, "destination");
+  if (!destination) return fail("Enter a full URL including https://", "destination");
+  const destinationError = validateDestination(destination);
+  if (destinationError) return fail(destinationError, "destination");
+
+  const projectId = optionalText(form, "projectId");
+  const folderId = optionalText(form, "folderId");
+
+  if (projectId) {
+    const project = await db.project.findFirst({
+      where: { id: projectId, workspaceId },
+      select: { id: true },
+    });
+    if (!project) return fail("Pick a project from this workspace.", "form");
+  }
+  if (folderId) {
+    const folder = await db.folder.findFirst({
+      where: { id: folderId, workspaceId },
+      select: { id: true },
+    });
+    if (!folder) return fail("Pick a folder from this workspace.", "form");
+  }
+
+  // Scoped by workspace and live-ness in the where clause: another tenant's id,
+  // or a deleted link, simply does not match.
+  const result = await db.link.updateMany({
+    where: { id, workspaceId, deletedAt: null },
+    data: {
+      destinationUrl: destination,
+      title: optionalText(form, "title"),
+      projectId,
+      folderId,
+      utmSource: optionalText(form, "utmSource"),
+      utmMedium: optionalText(form, "utmMedium"),
+      utmCampaign: optionalText(form, "utmCampaign"),
+      utmTerm: optionalText(form, "utmTerm"),
+      utmContent: optionalText(form, "utmContent"),
+    },
+  });
+
+  if (result.count === 0) return fail("That link no longer exists.", "form");
+
+  revalidatePath("/dashboard/links");
+  revalidatePath(`/dashboard/links/${id}`);
+  return ok({ id });
+}
+
+const STATUSES = ["ACTIVE", "PAUSED", "ARCHIVED"] as const;
+
+/** Pause, resume, archive and unarchive. */
+export async function setLinkStatus(
+  id: string,
+  status: string,
+): Promise<ActionResult<{ id: string; status: string }>> {
+  const workspaceId = await getCurrentWorkspaceId();
+
+  // The status arrives from the client; only the three real values are allowed.
+  if (!STATUSES.includes(status as (typeof STATUSES)[number])) {
+    return fail("Unknown status.", "form");
+  }
+
+  const result = await db.link.updateMany({
+    where: { id, workspaceId, deletedAt: null },
+    data: { status: status as (typeof STATUSES)[number] },
+  });
+
+  if (result.count === 0) return fail("That link no longer exists.", "form");
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/links");
+  revalidatePath(`/dashboard/links/${id}`);
+  return ok({ id, status });
+}
+
+/**
+ * Soft delete. The row stays, which keeps the click history intact and — through
+ * @@unique([domainId, slug]) — keeps the slug reserved forever, so a QR code
+ * already printed can never be taken over by a different link.
+ */
+export async function deleteLink(id: string): Promise<ActionResult<{ id: string }>> {
+  const workspaceId = await getCurrentWorkspaceId();
+
+  const result = await db.link.updateMany({
+    where: { id, workspaceId, deletedAt: null },
+    data: { deletedAt: new Date() },
+  });
+
+  if (result.count === 0) return fail("That link no longer exists.", "form");
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/links");
+  revalidatePath("/dashboard/qr-codes");
+  return ok({ id });
+}
+
+export interface EditableLink {
+  id: string;
+  slug: string;
+  host: string;
+  destination: string;
+  title: string;
+  utm: { source: string; medium: string; campaign: string; term: string; content: string };
+  projectId: string;
+  folderId: string;
+}
+
+/** Loads what the edit drawer needs. Scoped, and a deleted link is not editable. */
+export async function getEditableLink(id: string): Promise<EditableLink | null> {
+  const workspaceId = await getCurrentWorkspaceId();
+  const link = await db.link.findFirst({
+    where: { id, workspaceId, deletedAt: null },
+    include: { domain: { select: { host: true } } },
+  });
+  if (!link) return null;
+
+  return {
+    id: link.id,
+    slug: link.slug,
+    host: link.domain.host,
+    destination: link.destinationUrl,
+    title: link.title ?? "",
+    utm: {
+      source: link.utmSource ?? "",
+      medium: link.utmMedium ?? "",
+      campaign: link.utmCampaign ?? "",
+      term: link.utmTerm ?? "",
+      content: link.utmContent ?? "",
+    },
+    projectId: link.projectId ?? "",
+    folderId: link.folderId ?? "",
+  };
+}

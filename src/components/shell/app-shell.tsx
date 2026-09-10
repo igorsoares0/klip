@@ -10,7 +10,7 @@ import {
 import { useRouter } from "next/navigation";
 import { AppShellContext, type ToastState } from "./app-shell-context";
 import { CreateLinkDrawer, type DrawerOptions } from "./create-link-drawer";
-import type { CreatedLink } from "@/links/actions";
+import { getEditableLink, type CreatedLink, type EditableLink } from "@/links/actions";
 import { Header } from "./header";
 import { Sidebar, type UsageMeter } from "./sidebar";
 import { Toast } from "./toast";
@@ -41,11 +41,24 @@ export function AppShell({
   );
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [toast, setToast] = useState<ToastState | null>(null);
+  const [editing, setEditing] = useState<EditableLink | null>(null);
   const router = useRouter();
 
   const toggleSidebar = useCallback(() => sidebarStore.toggle(), []);
-  const openDrawer = useCallback(() => setDrawerOpen(true), []);
-  const closeDrawer = useCallback(() => setDrawerOpen(false), []);
+  const openDrawer = useCallback(() => {
+    setEditing(null);
+    setDrawerOpen(true);
+  }, []);
+  const closeDrawer = useCallback(() => {
+    setDrawerOpen(false);
+    setEditing(null);
+  }, []);
+  const editLink = useCallback(async (id: string) => {
+    const link = await getEditableLink(id);
+    if (!link) return;
+    setEditing(link);
+    setDrawerOpen(true);
+  }, []);
   const dismissToast = useCallback(() => setToast(null), []);
   const showToast = useCallback((next: ToastState) => setToast(next), []);
 
@@ -55,6 +68,7 @@ export function AppShell({
       toggleSidebar,
       drawerOpen,
       openDrawer,
+      editLink,
       closeDrawer,
       toast,
       showToast,
@@ -65,6 +79,7 @@ export function AppShell({
       toggleSidebar,
       drawerOpen,
       openDrawer,
+      editLink,
       closeDrawer,
       toast,
       showToast,
@@ -88,8 +103,12 @@ export function AppShell({
       </div>
 
       <CreateLinkDrawer
+        // Remount per link so the form starts from that link's values.
+        key={editing?.id ?? "new"}
         open={drawerOpen}
         onClose={closeDrawer}
+        editing={editing}
+        onSaved={() => router.refresh()}
         onCreated={(link: CreatedLink) => {
           showToast(link);
           // The action revalidated on the server; pull the fresh render in.

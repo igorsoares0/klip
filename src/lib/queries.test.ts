@@ -26,7 +26,7 @@ describe("workspace isolation", () => {
   // caller to say whose data they want — these assert it is actually honoured.
   it("returns nothing for a workspace that owns nothing", async () => {
     const [links, projects, qrCodes, apiKeys, topLinks] = await Promise.all([
-      listLinks(STRANGER),
+      (await listLinks(STRANGER)).rows,
       listProjects(STRANGER),
       listQrCodes(STRANGER),
       listApiKeys(STRANGER),
@@ -41,7 +41,7 @@ describe("workspace isolation", () => {
   });
 
   it("does not hand a real link to the wrong workspace", async () => {
-    const mine = await listLinks(WORKSPACE, 1);
+    const mine = (await listLinks(WORKSPACE, { take: 1 })).rows;
     expect(mine).toHaveLength(1);
 
     expect(await getLink(WORKSPACE, mine[0].id)).not.toBeNull();
@@ -63,7 +63,7 @@ describe("workspace isolation", () => {
 
 describe("listLinks", () => {
   it("reports counts that match the denormalized counter", async () => {
-    const links = await listLinks(WORKSPACE, 3);
+    const links = (await listLinks(WORKSPACE, { take: 3 })).rows;
     for (const link of links) {
       const actual = await db.linkClick.count({
         where: { linkId: link.id, isBot: false },
@@ -74,8 +74,8 @@ describe("listLinks", () => {
 
   it("gives a link the same favicon glyph on every call", async () => {
     const [first, second] = await Promise.all([
-      listLinks(WORKSPACE, 5),
-      listLinks(WORKSPACE, 5),
+      (await listLinks(WORKSPACE, { take: 5 })).rows,
+      (await listLinks(WORKSPACE, { take: 5 })).rows,
     ]);
     expect(first.map((l) => l.favicon)).toEqual(second.map((l) => l.favicon));
   });
@@ -103,7 +103,9 @@ describe("getSeries", () => {
   });
 
   it("scopes to a single link when given one", async () => {
-    const [link] = await listLinks(WORKSPACE, 1);
+    // It needs a link with traffic, so ask for one — the default order is
+    // newest-first, and the newest link may have none.
+    const [link] = (await listLinks(WORKSPACE, { take: 1, sort: "clicks" })).rows;
     const [all, one] = await Promise.all([
       getSeries(WORKSPACE, resolveWindow("30d")),
       getSeries(WORKSPACE, resolveWindow("30d"), link.id),
@@ -150,7 +152,7 @@ describe("listLinks ordering", () => {
     });
 
     try {
-      const listed = await listLinks(WORKSPACE);
+      const listed = (await listLinks(WORKSPACE)).rows;
       expect(listed[0]?.id).toBe(created.id);
       expect(listed[0]?.clicks).toBe(0);
     } finally {

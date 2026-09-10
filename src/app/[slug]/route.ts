@@ -33,7 +33,9 @@ export async function GET(
   // A paused link is answered as missing rather than as "exists but off" —
   // there is no reason to confirm the slug to someone probing.
   if (!link || link.status === "PAUSED") return gone(404);
-  if (link.status === "ARCHIVED") return gone(410);
+  // Archived and deleted both answer 410 Gone — which is what the danger-zone
+  // copy on the Settings screen promises.
+  if (link.status === "ARCHIVED" || link.deleted) return gone(410);
 
   const viaQr = new URL(_request.url).searchParams.get("qr") === "1";
 

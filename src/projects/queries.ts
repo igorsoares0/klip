@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { relativeTime } from "@/shared/format";
 import type { ProjectDot } from "@/lib/types";
+import { NOT_DELETED } from "@/links/live";
 
 export interface ProjectCard {
   id: string;
@@ -16,8 +17,8 @@ export async function listProjects(workspaceId: string): Promise<ProjectCard[]> 
   const rows = await db.project.findMany({
     where: { workspaceId },
     include: {
-      _count: { select: { links: true } },
-      links: { select: { clickCount: true } },
+      _count: { select: { links: { where: NOT_DELETED } } },
+      links: { where: NOT_DELETED, select: { clickCount: true } },
     },
     orderBy: { createdAt: "asc" },
   });
@@ -52,9 +53,9 @@ export async function getFolderTree(
   const roots = await db.folder.findMany({
     where: { workspaceId, projectId, parentId: null },
     include: {
-      _count: { select: { links: true } },
+      _count: { select: { links: { where: NOT_DELETED } } },
       children: {
-        include: { links: { select: { clickCount: true } } },
+        include: { links: { where: NOT_DELETED, select: { clickCount: true } } },
         orderBy: { createdAt: "asc" },
       },
     },

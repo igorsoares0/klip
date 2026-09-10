@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import type { DomainStatus } from "@/lib/types";
+import { NOT_DELETED } from "@/links/live";
 
 export interface DomainRow {
   id: string;
@@ -13,7 +14,7 @@ export interface DomainRow {
 export async function listDomains(workspaceId: string): Promise<DomainRow[]> {
   const rows = await db.customDomain.findMany({
     where: { OR: [{ workspaceId }, { workspaceId: null }] },
-    include: { _count: { select: { links: true } } },
+    include: { _count: { select: { links: { where: NOT_DELETED } } } },
     orderBy: { createdAt: "asc" },
   });
 

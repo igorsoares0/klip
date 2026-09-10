@@ -9,6 +9,7 @@ import type {
 } from "@/lib/types";
 import { formatNumber, percentDelta } from "@/shared/format";
 import { bucketReferrers } from "./referrers";
+import { liveLinks } from "@/links/live";
 import type { Window } from "./range";
 
 /**
@@ -88,11 +89,11 @@ export async function getDashboardStats(
     countUniqueVisitors(workspaceId, previous),
     countClicks(workspaceId, window, { viaQr: true }),
     countClicks(workspaceId, previous, { viaQr: true }),
-    db.link.count({ where: { workspaceId, status: "ACTIVE" } }),
-    db.link.count({ where: { workspaceId, status: "PAUSED" } }),
-    db.link.count({ where: { workspaceId, status: "ARCHIVED" } }),
+    db.link.count({ where: { ...liveLinks(workspaceId), status: "ACTIVE" } }),
+    db.link.count({ where: { ...liveLinks(workspaceId), status: "PAUSED" } }),
+    db.link.count({ where: { ...liveLinks(workspaceId), status: "ARCHIVED" } }),
     db.link.count({
-      where: { workspaceId, createdAt: { gte: window.from, lt: window.to } },
+      where: { ...liveLinks(workspaceId), createdAt: { gte: window.from, lt: window.to } },
     }),
   ]);
 
@@ -378,7 +379,7 @@ export async function getTopLinks(
   limit = 6,
 ): Promise<TopLink[]> {
   const rows = await db.link.findMany({
-    where: { workspaceId, status: "ACTIVE" },
+    where: { ...liveLinks(workspaceId), status: "ACTIVE" },
     include: { domain: { select: { host: true } } },
     orderBy: { clickCount: "desc" },
     take: limit,
@@ -432,7 +433,8 @@ export async function getFastestGrowing(workspaceId: string) {
   if (!winner) return null;
 
   const link = await db.link.findFirst({
-    where: { id: winner.linkId, workspaceId },
+    // A deleted link must not be featured, even if its old traffic grew.
+    where: { id: winner.linkId, ...liveLinks(workspaceId) },
     include: { domain: { select: { host: true } } },
   });
   if (!link) return null;
@@ -463,4 +465,17 @@ export async function getMonthlyClickUsage(workspaceId: string): Promise<number>
   return db.linkClick.count({
     where: { workspaceId, isBot: false, timestamp: { gte: monthStart } },
   });
+}
+
+/** Header facts for the dashboard: how many links are live, and whether any
+ *  click has ever been recorded (which decides the empty state). */
+export async function getDashboardOverview(workspaceId: string) {
+  const [activeLinks, anyClick] = await Promise.all([
+    db.link.count({ where: { ...liveLinks(workspaceId), status: "ACTIVE" } }),
+    db.linkClick.findFirst({
+      where: { workspaceId, isBot: false },
+      select: { id: true },
+    }),
+  ]);
+  return { activeLinks, hasClicks: anyClick !== null };
 }

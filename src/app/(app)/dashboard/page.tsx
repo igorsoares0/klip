@@ -4,13 +4,13 @@ import { getCurrentWorkspaceId } from "@/workspaces/current";
 import { parseRange, resolveWindow } from "@/analytics/range";
 import {
   getBreakdowns,
+  getDashboardOverview,
   getDashboardStats,
   getFastestGrowing,
   getSeries,
   getSeriesAxis,
   getTopLinks,
 } from "@/analytics/queries";
-import { db } from "@/lib/db";
 
 export const metadata = { title: "Overview · Klip" };
 export const dynamic = "force-dynamic";
@@ -21,18 +21,18 @@ export default async function DashboardPage(props: PageProps<"/dashboard">) {
   const range = parseRange(searchParams.range);
   const window = resolveWindow(range);
 
-  const [stats, series, topLinks, breakdowns, fastestGrowing, activeLinks, totalClicks] =
+  const [stats, series, topLinks, breakdowns, fastestGrowing, overview] =
     await Promise.all([
       getDashboardStats(workspaceId, window),
       getSeries(workspaceId, window),
       getTopLinks(workspaceId),
       getBreakdowns(workspaceId, window),
       getFastestGrowing(workspaceId),
-      db.link.count({ where: { workspaceId, status: "ACTIVE" } }),
-      db.linkClick.count({ where: { workspaceId, isBot: false } }),
+      getDashboardOverview(workspaceId),
     ]);
 
-  if (totalClicks === 0) return <DashboardEmpty />;
+  if (!overview.hasClicks) return <DashboardEmpty />;
+  const { activeLinks } = overview;
 
   const axis = await getSeriesAxis(window, series.length);
 
