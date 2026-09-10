@@ -28,14 +28,22 @@ function glyphFor(slug: string): string {
   return GLYPHS[hash % GLYPHS.length];
 }
 
-export async function listLinks(workspaceId: string, take = 9): Promise<LinkRow[]> {
+/**
+ * Newest first.
+ *
+ * Ordering by clickCount looked right against seed data, where every link had
+ * thousands — but a link someone just made has zero clicks and sorts to the
+ * bottom, so the one thing they want to see is the one thing missing. Sorting
+ * by clicks is a choice the toolbar offers, not the default.
+ */
+export async function listLinks(workspaceId: string, take = 25): Promise<LinkRow[]> {
   const rows = await db.link.findMany({
     where: { workspaceId },
     include: {
       domain: { select: { host: true } },
       project: { select: { name: true, color: true } },
     },
-    orderBy: { clickCount: "desc" },
+    orderBy: { createdAt: "desc" },
     take,
   });
 

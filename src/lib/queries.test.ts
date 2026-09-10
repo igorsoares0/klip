@@ -136,3 +136,25 @@ describe("getBreakdowns", () => {
     }
   });
 });
+
+describe("listLinks ordering", () => {
+  it("puts the newest link first, even with no clicks", async () => {
+    // Ordering by clickCount hid freshly created links behind the seed data.
+    const created = await db.link.create({
+      data: {
+        workspaceId: WORKSPACE,
+        domainId: "dom_klip",
+        slug: `order-check-${Date.now()}`,
+        destinationUrl: "https://example.com/order",
+      },
+    });
+
+    try {
+      const listed = await listLinks(WORKSPACE);
+      expect(listed[0]?.id).toBe(created.id);
+      expect(listed[0]?.clicks).toBe(0);
+    } finally {
+      await db.link.delete({ where: { id: created.id } });
+    }
+  });
+});

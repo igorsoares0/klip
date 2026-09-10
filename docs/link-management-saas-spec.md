@@ -1,8 +1,8 @@
 # Spec-Driven Development — Link Management & Analytics SaaS
 
 **Status:** Approved  
-**Version:** 1.1  
-**Date:** 2026-09-08 · **Amended:** 2026-09-09
+**Version:** 1.2  
+**Date:** 2026-09-08 · **Amended:** 2026-09-10
 
 > Sections 1–41 are the approved v1.0 text. **§42 records where the implementation
 > deliberately departs from them and is authoritative where the two disagree** — read it
@@ -1944,7 +1944,7 @@ The initial implementation should remain a **modular monolith using Next.js + Pr
 
 # 42. Implementation Amendments
 
-**Amended:** 2026-09-09 · **Spec version:** 1.1
+**Amended:** 2026-09-10 · **Spec version:** 1.2
 
 Sections 1–41 are the approved v1.0 specification and are left as written. This section
 records where the implementation deliberately departs from them, and why. **Where the two
@@ -2019,6 +2019,8 @@ Link       @@index([workspaceId, status])   link list
 Link       @@index([workspaceId, clickCount]) sort by clicks
 LinkClick  @@index([linkId, timestamp])     link detail time series
 LinkClick  @@index([workspaceId, timestamp]) workspace time series
+EmailToken @@unique([tokenHash])            verification and reset lookup
+ApiKey     @@unique([hashedKey])            API authentication
 ```
 
 ## 42.4 Stack
@@ -2042,3 +2044,67 @@ long-running Hetzner container of §26) and moves the connection string out of t
   layout without appearing in the URL. `(marketing)` is not built — the design handoff covers
   the authenticated product only.
 - Retention and pruning of `link_clicks` remain unspecified; no policy is implemented.
+
+## 42.6 Authentication
+
+**The `Session` and `VerificationToken` models are never written to.** Auth.js refuses to sign
+a user in through the Credentials provider under the database session strategy — it throws
+`UnsupportedStrategy`. Since §3 requires email + password, the session is a JWT. The two
+adapter tables stay in the schema (an OAuth-only future could use them) but hold no rows. In
+exchange `workspaceId` travels inside the token, so resolving the current workspace costs no
+query.
+
+**`EmailToken`** is added for email verification and password reset. Auth.js ships
+`VerificationToken`, but that belongs to the magic-link provider §3 does not ask for, and the
+two flows have different lifetimes. Tokens are stored as a SHA-256 hash: a reset token sitting
+in the clear is password-equivalent. Single use, enforced by a conditional update so two
+simultaneous clicks cannot both succeed.
+
+Password hashing uses **bcryptjs** — §3 permits bcrypt or Argon2id, and the pure-JavaScript
+implementation avoids matching a native binary to the deploy target.
+
+Requesting a reset for an address with no account returns **exactly the same response** as one
+that has an account. Otherwise the form answers "does this person have an account here?" for
+anyone who asks.
+
+## 42.7 The resolver
+
+**§9 and §40 principle 5 contradict each other.** The §9 diagram records the analytics event
+before redirecting; principle 5 says analytics must not block redirects. Next.js 16's `after()`
+satisfies both: the 302 is sent first and the click is written once the response is flushed.
+The Next docs confirm `after` runs even when a redirect was returned.
+
+**302, never 301.** A link's destination is editable, and a permanently cached hop would ignore
+later edits and stop counting that visitor forever. The response also carries
+`Cache-Control: no-store` — a cached redirect skips the application entirely and the click is
+simply lost.
+
+**Status mapping**, which §9 leaves as "404/410": missing → 404, `PAUSED` → 404 (no reason to
+confirm a slug to someone probing), `ARCHIVED` → 410 Gone.
+
+**`Link.clickCount` counts only non-bot clicks**, because every aggregate in
+`src/analytics/queries.ts` filters `isBot: false`. A counter that included bots would disagree
+with every chart in the product.
+
+**`RESERVED_SLUGS` must mirror the real top-level routes.** The resolver is a catch-all at
+`/[slug]` and a static route always wins over it, so a link whose slug collides with a page
+would be created successfully and then be permanently unreachable.
+
+**The IP hash is salted** (`CLICK_IP_SALT`, required in production). IPv4 has only ~4 billion
+values, so an unsalted SHA-256 is reversible with a rainbow table in minutes — which would
+defeat the point of §10.
+
+**Geolocation comes from CDN headers** (`CF-IPCountry` and friends), matching the Cloudflare
+edge §26 already assumes. No local database to version; the trade is no geo in development.
+
+**User-agent parsing is hand-written.** `ua-parser-js` moved to AGPL-3.0-or-later at v2, a poor
+fit for a commercial product, and §11 only asks for coarse buckets. Bot detection uses `isbot`
+(Unlicense, public domain), because crawler lists are exactly the thing that rots without
+maintenance.
+
+The three privacy switches in §11's Settings screen now govern recording: `respectDoNotTrack`
+skips the write entirely for a `DNT: 1` visitor, `hashVisitorIps` decides whether `ipHash` is
+stored at all, and `storeCityGeo` drops the city while keeping country and region.
+
+**Not implemented:** rate limiting on the resolver (§24 asks for it, but the store it needs is
+deferred alongside Redis in §26) and resolution caching.

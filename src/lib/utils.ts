@@ -9,12 +9,28 @@ export function cn(...parts: Array<string | false | null | undefined>): string {
 export const DEFAULT_DOMAIN = "klip.to";
 
 /** Slug paths Klip keeps for itself (handoff: create-link validation table). */
+/**
+ * Paths Klip keeps for itself.
+ *
+ * This must mirror the real top-level routes: the resolver is a catch-all at
+ * `/[slug]`, and a static route always wins over it. A link whose slug collides
+ * with a page would be created happily and then be permanently unreachable.
+ */
 export const RESERVED_SLUGS = [
   "api",
-  "login",
   "admin",
   "dashboard",
   "settings",
+  "login",
+  "register",
+  "onboarding",
+  "reset-password",
+  "verify-email",
+  // Reserved ahead of the marketing pages in spec §32.
+  "about",
+  "blog",
+  "features",
+  "pricing",
 ];
 
 // Handoff rule: ^https?://[^\s.]+\.[^\s]{2,} — case-insensitive so a pasted
