@@ -30,7 +30,7 @@ export function AppShell({
 }: {
   children: ReactNode;
   workspace: ShellWorkspace;
-  user: { initials: string };
+  user: { initials: string; email: string };
   usage: UsageMeter;
   drawerOptions: DrawerOptions;
 }) {
@@ -81,6 +81,7 @@ export function AppShell({
             onCreateLink={openDrawer}
             workspace={workspace}
             userInitials={user.initials}
+            userEmail={user.email}
           />
           <main className="flex-1 px-6 pb-[60px] pt-[26px]">{children}</main>
         </div>

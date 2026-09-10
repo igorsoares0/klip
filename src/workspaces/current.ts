@@ -1,10 +1,13 @@
+import { requireSession } from "@/auth/session";
+
 /**
- * The single place the current workspace is resolved.
+ * The current workspace, from the signed-in session.
  *
- * TODO: replace with the workspace from the Auth.js session once auth lands.
- * Every query takes workspaceId explicitly, so this is the only line that has
- * to change.
+ * Every query and action takes workspaceId as an explicit argument and gets it
+ * from here — so a request with no session cannot reach workspace data, whether
+ * it arrived through a page or as a direct POST to a server action.
  */
 export async function getCurrentWorkspaceId(): Promise<string> {
-  return "ws_acme";
+  const { workspaceId } = await requireSession();
+  return workspaceId;
 }

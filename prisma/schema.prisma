@@ -30,9 +30,10 @@ model User {
   /// Argon2id or bcrypt — never plaintext (spec §3). Null for OAuth-only users.
   passwordHash String?
 
-  accounts   Account[]
-  sessions   Session[]
+  accounts    Account[]
+  sessions    Session[]
   memberships WorkspaceMember[]
+  emailTokens EmailToken[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -67,6 +68,36 @@ model Session {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+/**
+ * Verification and password-reset tokens.
+ *
+ * Auth.js ships `VerificationToken`, but that one belongs to the magic-link
+ * provider the spec does not ask for. These two flows have different lifetimes
+ * and their own semantics, so they get their own table.
+ */
+enum EmailTokenType {
+  VERIFY_EMAIL
+  PASSWORD_RESET
+}
+
+model EmailToken {
+  id     String         @id @default(cuid())
+  userId String
+  type   EmailTokenType
+
+  /// Only the hash is stored — a reset token in the clear is password-equivalent.
+  tokenHash String @unique
+
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, type])
 }
 
 model VerificationToken {

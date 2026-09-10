@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CheckIcon, LinkGlyph } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/badge";
 import { Field, Input } from "@/components/ui/form";
-import { cn, DEFAULT_DOMAIN, normalizeSlug } from "@/lib/utils";
+import { FieldError } from "@/components/ui/form";
+import { cn, normalizeSlug } from "@/lib/utils";
+import { nameWorkspace } from "@/workspaces/onboarding-actions";
+import { createLink } from "@/links/actions";
 
 const STEPS = ["Workspace", "First link", "Done"];
 const USE_CASES = [
@@ -16,10 +19,18 @@ const USE_CASES = [
   "Developer",
 ];
 
-export function OnboardingScreen() {
+export function OnboardingScreen({
+  initialName,
+  domain,
+}: {
+  initialName: string;
+  domain: { id: string; host: string } | null;
+}) {
   const router = useRouter();
   const [step, setStep] = useState(1);
-  const [workspaceName, setWorkspaceName] = useState("Acme Growth");
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+  const [workspaceName, setWorkspaceName] = useState(initialName);
   const [useCase, setUseCase] = useState("Marketing team");
   const [destination, setDestination] = useState("");
   const [slug, setSlug] = useState("summer-sale");
@@ -29,14 +40,50 @@ export function OnboardingScreen() {
     .replace(/[^a-z0-9]+/g, "-")
     .split("-")[0]}-launch`;
 
+  const host = domain?.host ?? "klip.to";
   const cta = step === 1 ? "Continue" : step === 2 ? "Create link" : "Go to dashboard";
 
   function advance() {
-    if (step >= 3) {
-      router.push("/dashboard");
+    setError(null);
+
+    if (step === 1) {
+      startTransition(async () => {
+        const form = new FormData();
+        form.set("name", workspaceName);
+        const result = await nameWorkspace(form);
+        if (!result.ok) {
+          setError(result.error);
+          return;
+        }
+        router.refresh();
+        setStep(2);
+      });
       return;
     }
-    setStep(step + 1);
+
+    if (step === 2) {
+      // An empty destination means they would rather skip making a link.
+      if (!destination.trim()) {
+        setStep(3);
+        return;
+      }
+      startTransition(async () => {
+        const form = new FormData();
+        form.set("destination", destination);
+        form.set("slug", slug);
+        form.set("domainId", domain?.id ?? "");
+        const result = await createLink(form);
+        if (!result.ok) {
+          setError(result.error);
+          return;
+        }
+        router.refresh();
+        setStep(3);
+      });
+      return;
+    }
+
+    router.push("/dashboard");
   }
 
   return (
@@ -94,7 +141,7 @@ export function OnboardingScreen() {
               <p className="mt-2 text-caption text-faint">
                 Your links will look like{" "}
                 <span className="font-mono text-muted">
-                  {DEFAULT_DOMAIN}/{slugSample}
+                  {host}/{slugSample}
                 </span>
               </p>
             </div>
@@ -136,7 +183,7 @@ export function OnboardingScreen() {
               <Field label="Short link">
                 <div className="flex h-10 items-center rounded-input border border-border-strong bg-surface transition-colors hover:border-border-hover">
                   <span className="pl-3 font-mono text-body text-muted">
-                    {DEFAULT_DOMAIN}/
+                    {host}/
                   </span>
                   <input
                     value={slug}
@@ -163,13 +210,13 @@ export function OnboardingScreen() {
             </p>
             <div className="mt-6 flex w-full items-center justify-between gap-3 rounded-block bg-surface-sunken px-4 py-3">
               <span className="truncate font-mono text-body text-ink">
-                {DEFAULT_DOMAIN}/{slug || "summer-sale"}
+                {host}/{slug || "summer-sale"}
               </span>
               <Button
                 size="sm"
                 onClick={() =>
                   navigator.clipboard?.writeText(
-                    `https://${DEFAULT_DOMAIN}/${slug || "summer-sale"}`,
+                    `https://${host}/${slug || "summer-sale"}`,
                   )
                 }
               >
@@ -179,12 +226,18 @@ export function OnboardingScreen() {
           </div>
         ) : null}
 
+        {error ? (
+          <div className="mt-5">
+            <FieldError>{error}</FieldError>
+          </div>
+        ) : null}
+
         <div className="mt-8 flex items-center justify-between gap-3">
-          <Button variant="ghost" onClick={() => router.push("/dashboard")}>
+          <Button variant="ghost" onClick={() => router.push("/dashboard")} disabled={pending}>
             Skip for now
           </Button>
-          <Button variant="primary" onClick={advance}>
-            {cta}
+          <Button variant="primary" onClick={advance} disabled={pending}>
+            {pending ? "Saving…" : cta}
           </Button>
         </div>
       </div>

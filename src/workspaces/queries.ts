@@ -3,17 +3,22 @@ import { getMonthlyClickUsage } from "@/analytics/queries";
 import { CLICK_LIMIT } from "@/entitlements/limits";
 import { compactNumber } from "@/shared/format";
 
-/** Everything the app shell renders: workspace chip, avatar, usage meter. */
-export async function getShellData(workspaceId: string) {
+/**
+ * Everything the app shell renders: workspace chip, avatar, usage meter.
+ *
+ * The member lookup is keyed on the signed-in user, not on "first member of
+ * the workspace" — the latter would show a teammate's initials once workspaces
+ * hold more than one person.
+ */
+export async function getShellData(workspaceId: string, userId: string) {
   const [workspace, member, used] = await Promise.all([
     db.workspace.findUnique({
       where: { id: workspaceId },
       include: { defaultDomain: { select: { host: true } } },
     }),
     db.workspaceMember.findFirst({
-      where: { workspaceId },
+      where: { workspaceId, userId },
       include: { user: { select: { name: true, email: true } } },
-      orderBy: { createdAt: "asc" },
     }),
     getMonthlyClickUsage(workspaceId),
   ]);
@@ -32,7 +37,7 @@ export async function getShellData(workspaceId: string) {
       name,
       avatar: name[0]?.toUpperCase() ?? "K",
     },
-    user: { initials: initials || "?" },
+    user: { initials: initials || "?", email: member?.user.email ?? "" },
     usage: {
       label: "Tracked clicks",
       display: `${compactNumber(used)} / ${compactNumber(CLICK_LIMIT)}`,

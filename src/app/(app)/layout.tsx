@@ -1,5 +1,5 @@
 import { AppShell } from "@/components/shell/app-shell";
-import { getCurrentWorkspaceId } from "@/workspaces/current";
+import { requireSession } from "@/auth/session";
 import { getShellData } from "@/workspaces/queries";
 import { listProjectOptions } from "@/projects/queries";
 import { listDomains } from "@/domains/queries";
@@ -8,9 +8,9 @@ import { listDomains } from "@/domains/queries";
 export const dynamic = "force-dynamic";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
-  const workspaceId = await getCurrentWorkspaceId();
+  const { workspaceId, userId } = await requireSession();
   const [shell, options, domains] = await Promise.all([
-    getShellData(workspaceId),
+    getShellData(workspaceId, userId),
     listProjectOptions(workspaceId),
     listDomains(workspaceId),
   ]);

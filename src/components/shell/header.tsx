@@ -2,15 +2,18 @@
 
 import { ChevronDown, PlusIcon, SearchIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
+import { UserMenu } from "./user-menu";
 
 export function Header({
   onCreateLink,
   workspace,
   userInitials,
+  userEmail,
 }: {
   onCreateLink: () => void;
   workspace: { name: string; avatar: string };
   userInitials: string;
+  userEmail: string;
 }) {
   return (
     <header className="sticky top-0 z-30 flex h-[60px] items-center gap-3 border-b border-border bg-[rgba(245,244,241,.86)] px-6 backdrop-blur-[10px]">
@@ -52,9 +55,7 @@ export function Header({
         Create link
       </Button>
 
-      <span className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-pill bg-accent text-[11.5px] font-semibold text-white">
-        {userInitials}
-      </span>
+      <UserMenu initials={userInitials} email={userEmail} />
     </header>
   );
 }

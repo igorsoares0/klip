@@ -9,6 +9,7 @@ import { qrCodes as mockQrCodes } from "../src/lib/mock/qr";
 import { apiKeys as mockApiKeys } from "../src/lib/mock/api-keys";
 import { workspace as mockWorkspace, privacyToggles } from "../src/lib/mock/workspace";
 import { rnd } from "../src/lib/rng";
+import bcrypt from "bcryptjs";
 import type { DeviceType } from "../src/generated/prisma/enums";
 
 /**
@@ -27,6 +28,10 @@ const db = new PrismaClient({
 
 const WORKSPACE_ID = "ws_acme";
 const USER_ID = "usr_maria";
+
+/** Development-only credentials, so credentials sign-in can be exercised. */
+const DEV_EMAIL = "maria@acme.com";
+const DEV_PASSWORD = process.env.SEED_PASSWORD ?? "klip-dev-password";
 
 /** Visitors revisit, so unique visitors land near 70% of clicks, as designed. */
 const VISITOR_POOL = 0.72;
@@ -89,14 +94,17 @@ function weighted<T>(table: Array<[T, number]>, roll: number): T {
 }
 
 async function main() {
+  const passwordHash = await bcrypt.hash(DEV_PASSWORD, 12);
   const user = await db.user.upsert({
     where: { id: USER_ID },
-    update: {},
+    // Re-seeding refreshes the password so the documented one always works.
+    update: { passwordHash },
     create: {
       id: USER_ID,
       name: "Maria Rocha",
-      email: "maria@acme.com",
+      email: DEV_EMAIL,
       emailVerified: new Date(),
+      passwordHash,
     },
   });
 
@@ -332,6 +340,7 @@ async function main() {
     select: { ipHash: true },
   });
 
+  console.log(`Sign in with ${DEV_EMAIL} / ${DEV_PASSWORD}`);
   console.log("Seeded:", {
     workspaces: await db.workspace.count(),
     domains: await db.customDomain.count(),

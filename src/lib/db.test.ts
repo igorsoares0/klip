@@ -14,6 +14,8 @@ afterAll(async () => {
 });
 
 describe("seeded workspace", () => {
+  // These assert the seed is present, not that nothing else is: this database
+  // is also a working dev environment where links get created by hand.
   it("has the fixtures the screens render", async () => {
     const [links, projects, domains, qrCodes] = await Promise.all([
       db.link.count({ where: { workspaceId: WORKSPACE_ID } }),
@@ -23,9 +25,9 @@ describe("seeded workspace", () => {
     ]);
 
     expect(links).toBeGreaterThanOrEqual(9);
-    expect(projects).toBe(5);
-    expect(domains).toBe(3);
-    expect(qrCodes).toBe(4);
+    expect(projects).toBeGreaterThanOrEqual(5);
+    expect(domains).toBeGreaterThanOrEqual(3);
+    expect(qrCodes).toBeGreaterThanOrEqual(4);
   });
 
   it("keeps the shared domain outside any workspace", async () => {

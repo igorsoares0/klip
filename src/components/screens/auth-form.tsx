@@ -1,11 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import type { FormEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useTransition } from "react";
+import { signIn } from "next-auth/react";
 import { GoogleMark, LinkGlyph } from "@/components/icons";
 import { Button } from "@/components/ui/button";
-import { Field, Input, Label } from "@/components/ui/form";
+import { Field, FieldError, Input, Label } from "@/components/ui/form";
+import { register } from "@/auth/actions";
+import { passwordStrength } from "@/auth/password";
 
 const COPY = {
   register: {
@@ -26,16 +29,49 @@ const COPY = {
   },
 } as const;
 
-/** Three filled segments plus one empty — the "Strong" state from the handoff. */
-const STRENGTH = [true, true, true, false];
+const STRENGTH_LABELS = ["Too short", "Weak", "Fair", "Good", "Strong"];
 
 export function AuthForm({ mode }: { mode: "register" | "login" }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const copy = COPY[mode];
 
-  function onSubmit(event: FormEvent) {
-    event.preventDefault();
-    router.push("/onboarding");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
+  const strength = passwordStrength(password);
+
+  function onSubmit(form: FormData) {
+    setError(null);
+    startTransition(async () => {
+      if (mode === "register") {
+        const result = await register(form);
+        if (!result.ok) {
+          setError(result.error);
+          return;
+        }
+      }
+
+      const outcome = await signIn("credentials", {
+        email: String(form.get("email") ?? ""),
+        password: String(form.get("password") ?? ""),
+        redirect: false,
+      });
+
+      if (outcome?.error) {
+        setError(
+          mode === "login"
+            ? "That email and password do not match."
+            : "Account created, but signing in failed. Try signing in.",
+        );
+        return;
+      }
+
+      router.push(mode === "register" ? "/onboarding" : callbackUrl);
+      router.refresh();
+    });
   }
 
   return (
@@ -54,8 +90,9 @@ export function AuthForm({ mode }: { mode: "register" | "login" }) {
 
       <button
         type="button"
-        onClick={() => router.push("/onboarding")}
-        className="mt-7 flex h-[42px] w-full cursor-pointer items-center justify-center gap-[10px] rounded-block border border-border-strong bg-surface text-body font-medium text-ink transition-colors hover:border-border-hover"
+        disabled={pending}
+        onClick={() => signIn("google", { callbackUrl })}
+        className="mt-7 flex h-[42px] w-full cursor-pointer items-center justify-center gap-[10px] rounded-block border border-border-strong bg-surface text-body font-medium text-ink transition-colors hover:border-border-hover disabled:cursor-not-allowed"
       >
         <GoogleMark />
         Continue with Google
@@ -67,16 +104,18 @@ export function AuthForm({ mode }: { mode: "register" | "login" }) {
         <span className="h-px flex-1 bg-border" />
       </div>
 
-      <form onSubmit={onSubmit} className="flex flex-col gap-4">
+      <form action={onSubmit} className="flex flex-col gap-4">
         {mode === "register" ? (
           <Field label="Name">
-            <Input className="h-10" placeholder="Maria Rocha" autoComplete="name" />
+            <Input name="name" className="h-10" placeholder="Maria Rocha" autoComplete="name" />
           </Field>
         ) : null}
 
         <Field label="Email">
           <Input
+            name="email"
             type="email"
+            required
             className="h-10"
             placeholder="you@company.com"
             autoComplete="email"
@@ -88,7 +127,7 @@ export function AuthForm({ mode }: { mode: "register" | "login" }) {
             <Label>Password</Label>
             {mode === "login" ? (
               <Link
-                href="/login"
+                href="/reset-password"
                 className="text-caption font-medium text-accent hover:text-accent-hover"
               >
                 Forgot?
@@ -96,33 +135,52 @@ export function AuthForm({ mode }: { mode: "register" | "login" }) {
             ) : null}
           </div>
           <Input
+            name="password"
             type="password"
+            required
             className="h-10"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
             autoComplete={mode === "register" ? "new-password" : "current-password"}
           />
-          {mode === "register" ? (
+          {mode === "register" && password ? (
             <div className="mt-1 flex items-center gap-[10px]">
               <div className="flex flex-1 gap-1">
-                {STRENGTH.map((filled, index) => (
+                {[0, 1, 2, 3].map((index) => (
                   <span
                     key={index}
                     className={
-                      filled
+                      index < strength
                         ? "h-[3px] flex-1 rounded-pill bg-positive"
                         : "h-[3px] flex-1 rounded-pill bg-disabled-bg"
                     }
                   />
                 ))}
               </div>
-              <span className="text-[11px] font-semibold text-positive">
-                Strong
+              <span
+                className={
+                  strength >= 3
+                    ? "text-[11px] font-semibold text-positive"
+                    : "text-[11px] font-semibold text-muted"
+                }
+              >
+                {STRENGTH_LABELS[strength]}
               </span>
             </div>
           ) : null}
         </div>
 
-        <Button type="submit" variant="primary" size="lg" block className="mt-2">
-          {copy.cta}
+        {error ? <FieldError>{error}</FieldError> : null}
+
+        <Button
+          type="submit"
+          variant="primary"
+          size="lg"
+          block
+          className="mt-2"
+          disabled={pending}
+        >
+          {pending ? "Working…" : copy.cta}
         </Button>
       </form>
 
