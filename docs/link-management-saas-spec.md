@@ -1944,7 +1944,7 @@ The initial implementation should remain a **modular monolith using Next.js + Pr
 
 # 42. Implementation Amendments
 
-**Amended:** 2026-09-10 · **Spec version:** 1.2
+**Amended:** 2026-09-10 · **Spec version:** 1.3
 
 Sections 1–41 are the approved v1.0 specification and are left as written. This section
 records where the implementation deliberately departs from them, and why. **Where the two
@@ -2108,3 +2108,85 @@ stored at all, and `storeCityGeo` drops the city while keeping country and regio
 
 **Not implemented:** rate limiting on the resolver (§24 asks for it, but the store it needs is
 deferred alongside Redis in §26) and resolution caching.
+
+## 42.8 Link management
+
+**Delete is a soft delete** (`Link.deletedAt`). §22 lists Delete without saying what it
+means, and a hard delete of a short link is unrecoverable in a way nothing else in the product
+is: the slug may already be printed on packaging or a QR code.
+
+- A deleted link **answers 410 Gone**, the same as `ARCHIVED` — the resolver still finds it
+  for that reason.
+- **Its slug stays reserved.** Handing a printed slug to a different destination would send
+  old traffic somewhere its owner never chose.
+- It leaves every list, link count and top-links ranking. **Its clicks stay in the workspace
+  totals**, the chart and the CSV export: that traffic happened, and deleting a link should not
+  rewrite a past period's numbers.
+
+Soft delete has one classic failure: a query that forgets the filter shows a deleted row.
+Every link query goes through `liveLinks()` in `src/links/live.ts`. Only the slug check and
+the resolver bypass it, on purpose.
+
+**A link's folder decides its project.** A link placed in a folder takes the folder's
+project, whatever project the form sent, so the two can never disagree.
+
+The link list is paginated at 25 rows, with search, filters and sort carried in the URL.
+
+## 42.9 Projects and folders
+
+§14 says "delete/archive projects". **Projects and folders are deleted for real, and have no
+archive.** Unlike a link, a project appears in no URL and no printed code, so removing one
+breaks nothing outside the app.
+
+- **Links survive**: `Link.projectId` and `Link.folderId` are `SetNull`, so the links move to
+  "no project" and keep redirecting.
+- **Folders go with their project**, and subfolders with their parent (`Cascade`).
+
+## 42.10 QR codes
+
+§15 lists "basic customization" for the MVP and then puts *foreground* and *background*
+under "future customization". **Those two colours are the basic customization**
+(`QrCode.fgColor` / `bgColor`); logo, pattern and corner style stay future.
+
+**Colours are validated for scannability, not only syntax.** Two rules, because they are how
+customization most often breaks a code:
+
+- The code must be darker than its background — inverted codes fail on many phone scanners.
+- A contrast ratio of at least 4:1.
+
+Rendering does not trust what is stored: a colour that is not plain hex falls back to the
+default rather than reaching the SVG markup or crashing the page.
+
+A QR code encodes the short link plus `?qr=1`, which is how the resolver sets `viaQr` (§42.1).
+Codes are rendered on request (PNG at 1024px, or SVG) from `/api/qr/[id]` — no files are
+stored.
+
+## 42.11 Analytics
+
+**The custom range (§11) is whole calendar days in UTC**, inclusive of both ends, up to 366
+days. The presets (Today, 7, 30 and 90 days) are rolling windows ending now. The period is in
+the URL, so it survives a reload and a shared link. A malformed, backwards or too-long custom
+range falls back to 30 days rather than erroring.
+
+**Days are cut in UTC**, because that is how the database buckets them: a click at 22:00 in
+Brazil lands on the next day. A per-workspace timezone is the fix, and is not built.
+
+**The chart's bucket follows the span:** hourly up to 2 days, daily up to 90, weekly beyond.
+A year of daily bars would not fit the chart. Edge buckets rarely line up with the window
+(weeks start on Monday), so the series counts only clicks inside the window, and the chart
+always adds up to the cards above it.
+
+**Region and city** are shown alongside country, as §11 asks. They come only from CDN headers
+(§42.7), so they are empty in development.
+
+**CSV export** (`/api/analytics/export`), for the same period as the screen. It leaves out:
+
+- `ipHash` — not the IP, but it identifies the same visitor across rows. It is a
+  pseudonymous fingerprint and does not leave the system.
+- `userAgent`, which comes close to an identifier on its own.
+- Bot traffic, so the file adds up to the numbers the screens show.
+
+City is a column only while the workspace stores city-level geo, which is what the Settings
+toggle promises. Every cell that could start a spreadsheet formula (`=`, `+`, `-`, `@`) is
+escaped, because the referrer is written by whoever clicked. The file is streamed in pages,
+never held in memory.

@@ -1,7 +1,7 @@
 import { DashboardScreen } from "@/components/screens/dashboard";
 import { DashboardEmpty } from "@/components/screens/states";
 import { getCurrentWorkspaceId } from "@/workspaces/current";
-import { parseRange, resolveWindow } from "@/analytics/range";
+import { parseWindowParams, resolveWindow } from "@/analytics/range";
 import {
   getBreakdowns,
   getDashboardOverview,
@@ -17,9 +17,8 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage(props: PageProps<"/dashboard">) {
   const workspaceId = await getCurrentWorkspaceId();
-  const searchParams = await props.searchParams;
-  const range = parseRange(searchParams.range);
-  const window = resolveWindow(range);
+  const period = parseWindowParams(await props.searchParams);
+  const window = resolveWindow(period);
 
   const [stats, series, topLinks, breakdowns, fastestGrowing, overview] =
     await Promise.all([
@@ -39,7 +38,8 @@ export default async function DashboardPage(props: PageProps<"/dashboard">) {
   return (
     <DashboardScreen
       data={{
-        range,
+        period,
+        periodLabel: window.label,
         stats,
         series,
         axis,

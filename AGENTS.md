@@ -72,6 +72,19 @@ Domain modules follow spec §33 — `src/auth/`, `src/analytics/`, `src/links/`,
 - Pages are `async` server components that call a query module and pass typed props down.
   Any route reading the database needs `export const dynamic = "force-dynamic"`, or the
   build will try to prerender it and hit Postgres.
+- **Links are soft-deleted.** Query them through `liveLinks(workspaceId)` from
+  `src/links/live.ts`, never `{ workspaceId }` alone — forgetting the filter quietly shows
+  deleted links. Only the slug check and the resolver bypass it, on purpose (spec §42.8).
+
+## Analytics
+
+- **Every click aggregate filters `isBot: false`**, including `Link.clickCount` — a number
+  that counts bots disagrees with every other chart.
+- **A page with a period reads it with `parseWindowParams` then `resolveWindow`** from
+  `src/analytics/range.ts`, and puts `RangePicker` on the page. `window.to` is **exclusive**:
+  a custom Sep 1–5 ends at midnight Sep 6. Days are UTC (spec §42.11).
+- **`ipHash` and `userAgent` never leave the system** — not in exports, not in API responses.
+  The CSV export leaves both out by the owner's decision; keep it that way.
 
 ## Authorization
 
@@ -83,6 +96,13 @@ workspace data.
 `src/proxy.ts` also redirects anonymous traffic away from `/dashboard`, but the Next docs are
 explicit that proxy is an *optimistic check*, not the boundary — never rely on it alone.
 (It lives in `src/`, beside `app/`. At the repo root Next silently ignores it.)
+
+### Route handlers
+
+The proxy only matches `/dashboard` and `/onboarding`, so **nothing stands in front of
+`src/app/api/`**. Each handler calls `requireSession()` itself, answers 401 on
+`UnauthenticatedError`, and scopes its lookup by workspace — an id from another tenant is a
+404. `src/app/api/qr/[id]/route.ts` is the pattern.
 
 ### Server actions
 

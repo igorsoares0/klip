@@ -34,15 +34,26 @@ export function BreakdownRow({
   );
 }
 
-export function BreakdownPanelCard({ panel }: { panel: Panel }) {
+export function BreakdownPanelCard({
+  panel,
+  empty = "No data for this period.",
+}: {
+  panel: Panel;
+  /** Shown instead of a blank panel, which otherwise reads as a bug. */
+  empty?: string;
+}) {
   return (
     <Card className="px-5 py-4">
       <h2 className="text-[13.5px] font-semibold text-ink">{panel.title}</h2>
-      <div className="mt-4 flex flex-col gap-[14px]">
-        {panel.rows.map((row) => (
-          <BreakdownRow key={row.label} item={row} color={panel.color} />
-        ))}
-      </div>
+      {panel.rows.length === 0 ? (
+        <p className="mt-4 text-meta text-faint">{empty}</p>
+      ) : (
+        <div className="mt-4 flex flex-col gap-[14px]">
+          {panel.rows.map((row) => (
+            <BreakdownRow key={row.label} item={row} color={panel.color} />
+          ))}
+        </div>
+      )}
     </Card>
   );
 }

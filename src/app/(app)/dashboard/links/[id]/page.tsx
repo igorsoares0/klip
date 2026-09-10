@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { LinkDetailScreen } from "@/components/screens/link-detail";
 import { getCurrentWorkspaceId } from "@/workspaces/current";
 import { getLink } from "@/links/queries";
-import { resolveWindow } from "@/analytics/range";
+import { parseWindowParams, resolveWindow } from "@/analytics/range";
 import { getBreakdownPanels, getLinkStats, getSeries } from "@/analytics/queries";
 import { buildFinalUrl } from "@/lib/utils";
 
@@ -18,7 +18,8 @@ export default async function LinkDetailPage(
   const link = await getLink(workspaceId, id);
   if (!link) notFound();
 
-  const window = resolveWindow("30d");
+  const period = parseWindowParams(await props.searchParams);
+  const window = resolveWindow(period);
   const [stats, series, panels] = await Promise.all([
     getLinkStats(workspaceId, link.id, window),
     getSeries(workspaceId, window, link.id),
@@ -37,6 +38,8 @@ export default async function LinkDetailPage(
     <LinkDetailScreen
       data={{
         id: link.id,
+        period,
+        periodLabel: window.label,
         shortUrl: `${link.domain.host}/${link.slug}`,
         destination,
         status: link.status,

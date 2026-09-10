@@ -183,17 +183,39 @@ export async function getLinkStats(
   ];
 }
 
+// UTC throughout: the database truncates buckets in UTC, and labelling them in
+// the server's local zone would put a bar under the wrong date.
+const HOUR = new Intl.DateTimeFormat("en-US", { hour: "numeric", timeZone: "UTC" });
+const DAY_FMT = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  timeZone: "UTC",
+});
+
+function bucketLabel(bucket: Window["bucket"], at: Date): string {
+  if (bucket === "hour") return HOUR.format(at);
+  if (bucket === "week") return `Week of ${DAY_FMT.format(at)}`;
+  return DAY_FMT.format(at);
+}
+
 /**
  * Bucketed time series. generate_series supplies every bucket in the window so
  * a quiet day renders as a zero-height bar instead of vanishing and letting the
  * chart silently compress.
+ *
+ * The edge buckets rarely line up with the window — weeks start on Monday, and
+ * a rolling preset starts mid-day — so clicks are also bounded by the window
+ * itself. Otherwise a custom range starting Sunday Mar 1 would count Feb 23–28,
+ * and the chart would not add up to the cards above it. The series stops at the
+ * bucket holding the window's last instant, since `to` is exclusive.
  */
 export async function getSeries(
   workspaceId: string,
   window: Window,
   linkId?: string,
 ): Promise<SeriesPoint[]> {
-  const step = window.bucket === "hour" ? "1 hour" : "1 day";
+  const step =
+    window.bucket === "hour" ? "1 hour" : window.bucket === "week" ? "1 week" : "1 day";
   const linkFilter = linkId
     ? Prisma.sql`AND c."linkId" = ${linkId}`
     : Prisma.empty;
@@ -206,12 +228,14 @@ export async function getSeries(
            COUNT(DISTINCT c."ipHash") AS uniques
     FROM generate_series(
            date_trunc(${window.bucket}, ${window.from}::timestamptz),
-           date_trunc(${window.bucket}, ${window.to}::timestamptz),
+           date_trunc(${window.bucket}, ${window.to}::timestamptz - interval '1 microsecond'),
            ${step}::interval
          ) AS b(bucket)
     LEFT JOIN "LinkClick" c
       ON c."timestamp" >= b.bucket
      AND c."timestamp" < b.bucket + ${step}::interval
+     AND c."timestamp" >= ${window.from}
+     AND c."timestamp" < ${window.to}
      AND c."workspaceId" = ${workspaceId}
      AND c."isBot" = false
      ${linkFilter}
@@ -219,19 +243,13 @@ export async function getSeries(
     ORDER BY b.bucket
   `;
 
-  const formatter = new Intl.DateTimeFormat("en-US",
-    window.bucket === "hour"
-      ? { hour: "numeric" }
-      : { month: "short", day: "numeric" },
-  );
-
   return rows.map((row) => {
     const clicks = Number(row.clicks);
     const uniques = Number(row.uniques);
     return {
       clicks,
       unique: uniques,
-      label: `${formatNumber(clicks)} clicks · ${formatNumber(uniques)} unique — ${formatter.format(row.bucket)}`,
+      label: `${formatNumber(clicks)} clicks · ${formatNumber(uniques)} unique — ${bucketLabel(window.bucket, row.bucket)}`,
     };
   });
 }
@@ -242,12 +260,10 @@ export async function getSeriesAxis(
   points: number,
 ): Promise<string[]> {
   if (points === 0) return [];
-  const formatter = new Intl.DateTimeFormat("en-US",
-    window.bucket === "hour"
-      ? { hour: "numeric" }
-      : { month: "short", day: "numeric" },
-  );
-  const span = window.to.getTime() - window.from.getTime();
+  const formatter = window.bucket === "hour" ? HOUR : DAY_FMT;
+  // Label the last instant inside the window: a custom range ending Sep 10
+  // runs to midnight Sep 11, and its axis should not say Sep 11.
+  const span = window.to.getTime() - 1 - window.from.getTime();
   return Array.from({ length: 5 }, (_, i) =>
     formatter.format(new Date(window.from.getTime() + (span * i) / 4)),
   );
@@ -478,4 +494,58 @@ export async function getDashboardOverview(workspaceId: string) {
     }),
   ]);
   return { activeLinks, hasClicks: anyClick !== null };
+}
+
+/**
+ * Region and city panels (spec §11 asks for country, region and city).
+ *
+ * Both come from CDN headers the resolver reads — cf-region, cf-ipcity — so
+ * they are empty in development and wherever no CDN sits in front. City is only
+ * stored when the workspace's storeCityGeo toggle was on at click time.
+ */
+export async function getGeoPanels(
+  workspaceId: string,
+  window: Window,
+  linkId?: string,
+): Promise<BreakdownPanel[]> {
+  const where = humanClicks(workspaceId, window, linkId);
+
+  const [regions, cities] = await Promise.all([
+    db.linkClick.groupBy({
+      by: ["region", "country"],
+      where: { ...where, region: { not: null } },
+      _count: { _all: true },
+    }),
+    db.linkClick.groupBy({
+      by: ["city", "country"],
+      where: { ...where, city: { not: null } },
+      _count: { _all: true },
+    }),
+  ]);
+
+  const rows = (
+    list: Array<{ name: string | null; country: string | null; _count: { _all: number } }>,
+  ) =>
+    toItems(
+      list
+        .filter((row) => row.name)
+        .map((row) => ({
+          label: row.country ? `${row.name} · ${row.country}` : row.name!,
+          count: row._count._all,
+        }))
+        .sort((a, b) => b.count - a.count),
+    );
+
+  return [
+    {
+      title: "Regions",
+      color: "var(--color-dot-5)",
+      rows: rows(regions.map((r) => ({ name: r.region, country: r.country, _count: r._count }))),
+    },
+    {
+      title: "Cities",
+      color: "var(--color-dot-2)",
+      rows: rows(cities.map((c) => ({ name: c.city, country: c.country, _count: c._count }))),
+    },
+  ];
 }

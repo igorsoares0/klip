@@ -2,22 +2,16 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { SegmentedControl } from "@/components/ui/segmented";
+import { RangePicker } from "@/components/ui/range-picker";
 import { BarChart, ChartLegend } from "@/components/ui/bar-chart";
 import { BreakdownRow } from "@/components/ui/breakdown";
 import { ArrowRight } from "@/components/icons";
-import { RANGES, rangeLabel } from "@/analytics/range";
-import type {
-  BreakdownItem,
-  SeriesPoint,
-  Stat,
-  TimeRange,
-  TopLink,
-} from "@/lib/types";
+import type { WindowSpec } from "@/analytics/range";
+import type { BreakdownItem, SeriesPoint, Stat, TopLink } from "@/lib/types";
 
 export type BreakdownTab = "countries" | "referrers" | "devices";
 
@@ -28,7 +22,9 @@ const TABS: Array<{ id: BreakdownTab; label: string }> = [
 ];
 
 export interface DashboardData {
-  range: TimeRange;
+  period: WindowSpec;
+  /** "30 days", or "Sep 1 – Sep 10" for a custom range. */
+  periodLabel: string;
   stats: Stat[];
   series: SeriesPoint[];
   axis: string[];
@@ -44,31 +40,17 @@ export interface DashboardData {
 }
 
 export function DashboardScreen({ data }: { data: DashboardData }) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
   // Only the breakdown tab stays client-side: all three sets already arrived,
-  // so switching costs nothing. The range drives every query, so it lives in
-  // the URL and re-runs them on the server.
+  // so switching costs nothing. The period drives every query, so it lives in
+  // the URL (via RangePicker) and re-runs them on the server.
   const [tab, setTab] = useState<BreakdownTab>("countries");
-
-  function setRange(range: TimeRange) {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("range", range);
-    router.push(`/dashboard?${params.toString()}`);
-  }
 
   return (
     <div className="mx-auto max-w-content animate-klip-in">
       <PageHeader
         title="Overview"
         sub={`Everything happening across ${data.activeLinks} active links.`}
-        action={
-          <SegmentedControl
-            options={RANGES}
-            value={data.range}
-            onChange={setRange}
-          />
-        }
+        action={<RangePicker value={data.period} />}
       />
 
       <div className="grid gap-[14px] [grid-template-columns:repeat(auto-fit,minmax(200px,1fr))]">
@@ -84,7 +66,7 @@ export function DashboardScreen({ data }: { data: DashboardData }) {
               Clicks over time
             </h2>
             <p className="mt-1 text-meta text-muted">
-              {rangeLabel(data.range)} · hover a bar for detail
+              {data.periodLabel} · hover a bar for detail
             </p>
           </div>
           <ChartLegend

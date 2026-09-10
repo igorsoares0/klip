@@ -6,11 +6,15 @@ import { LinkStatusBadge } from "@/components/ui/badge";
 import { BarChart } from "@/components/ui/bar-chart";
 import { BreakdownPanelCard } from "@/components/ui/breakdown";
 import { ChevronLeft } from "@/components/icons";
+import { RangePicker } from "@/components/ui/range-picker";
+import type { WindowSpec } from "@/analytics/range";
 import type { BreakdownPanel, LinkStatus, SeriesPoint, Stat } from "@/lib/types";
 import { LinkDetailActions } from "./link-detail-actions";
 
 export interface LinkDetailData {
   id: string;
+  period: WindowSpec;
+  periodLabel: string;
   shortUrl: string;
   destination: string;
   status: LinkStatus;
@@ -46,9 +50,12 @@ export function LinkDetailScreen({ data }: { data: LinkDetailData }) {
       </div>
 
       <Card className="mt-[18px] px-5 pb-5 pt-4">
-        <h2 className="text-card-title font-semibold text-ink">
-          Clicks · last 30 days
-        </h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-card-title font-semibold text-ink">
+            Clicks · {data.periodLabel}
+          </h2>
+          <RangePicker value={data.period} />
+        </div>
         <div className="mt-5">
           <BarChart series={data.series} variant="single" height={150} />
         </div>
